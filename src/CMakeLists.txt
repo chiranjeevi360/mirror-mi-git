@@ -682,15 +682,10 @@ if(MIOPEN_USE_MLIR)
 endif()
 
 # build library
+add_library( MIOpen ${MIOpen_Source} )
+
 if(MIOPEN_ENABLE_SQLITE)
-    add_library( MIOpen
-        ${MIOpen_Source}
-        $<TARGET_OBJECTS:sqlite_memvfs>
-        )
-else()
-    add_library( MIOpen
-        ${MIOpen_Source}
-        )
+    target_link_libraries(MIOpen PRIVATE sqlite_memvfs)
 endif()
 
 rocm_set_soversion(MIOpen ${MIOpen_SOVERSION})
@@ -795,10 +790,12 @@ if(rocblas_FOUND)
     list(APPEND PACKAGE_STATIC_DEPENDS PACKAGE rocblas)
 endif()
 
-# For backward compatibility with ROCm 5.3
-# Build with library libMLIRMIOpen
-if(LIBMLIRMIOPEN)
-    target_link_libraries(MIOpen PRIVATE ${LIBMLIRMIOPEN})
+if(NOT WIN32)
+    # For backward compatibility with ROCm 5.3
+    # Build with library libMLIRMIOpen
+    if(LIBMLIRMIOPEN)
+        target_link_libraries(MIOpen PRIVATE ${LIBMLIRMIOPEN})
+    endif()
 endif()
 
 # Build with package rocMLIR

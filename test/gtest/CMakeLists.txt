@@ -23,8 +23,11 @@ function(add_gtest TEST_NAME TEST_CPP)
     target_link_libraries(${TEST_NAME} frugally-deep::fdeep Eigen3::Eigen)
   endif()
   target_link_libraries(${TEST_NAME} GTest::gtest GTest::gtest_main MIOpen ${Boost_LIBRARIES} hip::host $<BUILD_INTERFACE:roc::rocblas>)
+  if(rocBLAS_FOUND)
+    target_link_libraries(${TEST_NAME} PRIVATE roc::rocblas)
+  endif()
   if(NOT MIOPEN_EMBED_DB STREQUAL "")
-      target_link_libraries(${TEST_NAME} $<BUILD_INTERFACE:miopen_data>)
+    target_link_libraries(${TEST_NAME} $<BUILD_INTERFACE:miopen_data>)
   endif()
   if(NOT WIN32) # TODO: cannot run on Windows due to missing DLL dependencies
     # Enable CMake to discover the test binary
