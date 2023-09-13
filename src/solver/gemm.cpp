@@ -37,6 +37,7 @@
 #include <miopen/tensor_ops.hpp>
 #include <miopen/util.hpp>
 #include <miopen/conv/data_invoke_params.hpp>
+#include <miopen/check_numerics.hpp>
 
 #include <boost/any.hpp>
 #include <boost/range/adaptors.hpp>
@@ -1176,6 +1177,9 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                 std::size_t out_offset = i * wei_k * out_spatial_size;
                 std::size_t in_offset  = i * in_c * in_spatial_size;
 
+                //debug
+                miopen::checkNumericsInput(handle, xDesc, x);
+
                 iteration_time += Im2ColGPU(handle,
                                             spatial_dim,
                                             x,
@@ -1189,6 +1193,9 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                                             conv.GetConvDilations(),
                                             workSpace,
                                             xDesc.GetType());
+
+                 //debug
+                 miopen::checkNumericsOutput(handle, xDesc, x);
 
                 std::size_t wksp_offset = 0;
                 if(wDesc.GetType() == miopenInt8)
