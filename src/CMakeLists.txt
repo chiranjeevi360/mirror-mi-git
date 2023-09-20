@@ -127,6 +127,7 @@ set( MIOpen_Source
     load_file.cpp
     lock_file.cpp
     logger.cpp
+    layernorm_api.cpp
     lrn_api.cpp
     op_args.cpp
     operator.cpp
@@ -413,6 +414,7 @@ if( MIOPEN_BACKEND MATCHES "OpenCL" OR MIOPEN_BACKEND STREQUAL "HIPOC" OR MIOPEN
         kernels/MIOpenConvDirUni.cl
         kernels/MIOpenConvDirBatchNormActiv.cl
         kernels/MIOpenConvDirGenFwd.cl
+        kernels/MIOpenLayerNorm.cpp
         kernels/MIOpenLRNBwd.cl
         kernels/MIOpenLRNFwd.cl
         kernels/MIOpenNeuron.cl
@@ -552,6 +554,7 @@ if( MIOPEN_BACKEND MATCHES "OpenCL" OR MIOPEN_BACKEND STREQUAL "HIPOC" OR MIOPEN
         hip/hip_build_utils.cpp
         hip/batched_transpose_sol.cpp
         hip/general_tensor_reorder_sol.cpp
+        layer_norm.cpp
         pooling.cpp
         ocl/fusionopconvocl.cpp
         ocl/fusionopbiasbnactivocl.cpp
@@ -678,6 +681,11 @@ endif()
 rocm_set_soversion(MIOpen ${MIOpen_SOVERSION})
 
 clang_tidy_check(MIOpen)
+
+find_package(zstd)
+if(zstd_FOUND)
+    target_link_libraries(MIOpen PRIVATE zstd::libzstd_static)
+endif()
 
 function(target_internal_library TARGET)
     target_link_libraries(${TARGET} PRIVATE ${ARGN})
@@ -842,6 +850,8 @@ if(NOT WIN32 AND NOT APPLE)
         target_internal_library(MIOpen ${LIBRT})
     endif()
 endif()
+############################################################
+target_link_libraries(MIOpen PRIVATE "-lroctx64")
 
 ############################################################
 # Installation

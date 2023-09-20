@@ -212,7 +212,6 @@ std::string ConvDirectNaiveConvCompileOption(const ConvolutionContext& ctx,
         ss << " -DWEIGHTS_TYPE=" << miopen::GetDataType(problem.GetWeightsDataType());
         ss << " -DOUTPUT_TYPE="
            << miopen::GetDataType(ProblemInterpreter::GetOutputDataType(problem));
-        //const auto in_cast_type = problem.GetInCastType();
         const auto in_cast_type = ProblemInterpreter::GetInputCastType(problem);
         if(in_cast_type)
             ss << " -DINPUT_CAST_TYPE=" << miopen::GetDataType(*in_cast_type);

@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2019 Advanced Micro Devices, Inc.
+ * Copyright (c) 2023 Advanced Micro Devices, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,20 +23,16 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#include "conv_common.hpp"
+#include "layernorm_test.hpp"
+#ifdef MIOPEN_BETA_API
 
-template <class T>
-struct conv2d_bias_driver : public conv_bias_driver<T>
+struct LayerNormSolverTestFloat : LayerNormSolverTest<float>
 {
-    conv2d_bias_driver()
-    {
-        auto gen_value = [](auto... is) {
-            return prng::gen_A_to_B(1, miopen_type<T>{} == miopenHalf ? 5 : 17) *
-                   tensor_elem_gen_checkboard_sign{}(is...);
-        };
-
-        this->add(this->output, "output", this->get_tensor(get_inputs, gen_value));
-    }
 };
 
-int main(int argc, const char* argv[]) { test_drive<conv2d_bias_driver>(argc, argv); }
+TEST_P(LayerNormSolverTestFloat, LayerNormTestFw){};
+
+INSTANTIATE_TEST_SUITE_P(LayerNormTestSet,
+                         LayerNormSolverTestFloat,
+                         testing::ValuesIn(LayerNormTestConfigs()));
+#endif

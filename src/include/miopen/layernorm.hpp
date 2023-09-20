@@ -2,7 +2,7 @@
  *
  * MIT License
  *
- * Copyright (c) 2019 Advanced Micro Devices, Inc.
+ * Copyright (c) 2023 Advanced Micro Devices, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,20 +23,35 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#include "conv_common.hpp"
+#include <miopen/miopen.h>
+#ifdef MIOPEN_BETA_API
+#ifndef MIOPEN_LAYERNORM_HPP_
+#define MIOPEN_LAYERNORM_HPP_
 
-template <class T>
-struct conv2d_bias_driver : public conv_bias_driver<T>
-{
-    conv2d_bias_driver()
-    {
-        auto gen_value = [](auto... is) {
-            return prng::gen_A_to_B(1, miopen_type<T>{} == miopenHalf ? 5 : 17) *
-                   tensor_elem_gen_checkboard_sign{}(is...);
-        };
+#include <miopen/common.hpp>
 
-        this->add(this->output, "output", this->get_tensor(get_inputs, gen_value));
-    }
-};
+namespace miopen {
 
-int main(int argc, const char* argv[]) { test_drive<conv2d_bias_driver>(argc, argv); }
+struct Handle;
+struct TensorDescriptor;
+
+miopenStatus_t LayerNormForward(const Handle& handle,
+                                const TensorDescriptor& xDesc,
+                                ConstData_t x,
+                                const TensorDescriptor& weightDesc,
+                                ConstData_t weight,
+                                const TensorDescriptor& biasDesc,
+                                ConstData_t bias,
+                                const TensorDescriptor& yDesc,
+                                Data_t y,
+                                const TensorDescriptor& meanDesc,
+                                Data_t mean,
+                                const TensorDescriptor& rstdDesc,
+                                Data_t rstd,
+                                miopenLayerNormMode_t mode,
+                                const float epsilon,
+                                const int32_t normalized_dim);
+
+} // namespace miopen
+#endif // _MIOPEN_LAYERNORM_HPP_
+#endif

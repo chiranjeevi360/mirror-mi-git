@@ -31,7 +31,6 @@
 #include <miopen/tensor.hpp>
 #include <miopen/seq_tensor.hpp>
 #include <miopen/tensor_ops.hpp>
-#include <iostream>
 
 extern "C" miopenStatus_t miopenCreateTensorDescriptor(miopenTensorDescriptor_t* tensorDesc)
 {
@@ -207,7 +206,6 @@ extern "C" miopenStatus_t miopenSetTensorCastType(miopenTensorDescriptor_t tenso
     {
         MIOPEN_LOG_FUNCTION(tensorDesc, cast_type);
     }
-	std::cout << "INSIDE MIOPENSETTENSORCASTTYPE: cast_type: " << cast_type << std::endl;
 
     return miopen::try_([&] { miopen::deref(tensorDesc).SetCastType(cast_type); });
 }
@@ -311,15 +309,15 @@ static void LogCmdTensorOp(miopenTensorOp_t tensorOp,
         if(!is_set && !is_scale)
         {
             // clang-format off
-            ss << " -A " << std::to_string(*static_cast<const float*>(alpha)) 
-               << " -B " << std::to_string(*static_cast<const float*>(alpha2)) 
+            ss << " -A " << std::to_string(*static_cast<const float*>(alpha))
+               << " -B " << std::to_string(*static_cast<const float*>(alpha2))
                << " -G " << std::to_string(*static_cast<const float*>(beta));
             // clang-format on
         }
         // clang-format off
-        ss << " -n " << miopen::deref(aDesc).GetLengths()[0] 
+        ss << " -n " << miopen::deref(aDesc).GetLengths()[0]
            << " -c " << miopen::deref(aDesc).GetLengths()[1]
-           << " -H " << miopen::deref(aDesc).GetLengths()[2] 
+           << " -H " << miopen::deref(aDesc).GetLengths()[2]
            << " -W " << miopen::deref(aDesc).GetLengths()[3];
         // clag-format on
         if(is_set)
