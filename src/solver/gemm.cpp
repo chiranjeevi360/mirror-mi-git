@@ -1123,9 +1123,9 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
             {
                 // IsApplicable ensures that both are casted
                 if(xDesc.GetCastType())
-                    tmp.a_cast_type = *wDesc.GetCastType();
+                    tmp.a_cast_type = *xDesc.GetCastType();
                 if(wDesc.GetCastType())
-                    tmp.b_cast_type = *xDesc.GetCastType();
+                    tmp.b_cast_type = *wDesc.GetCastType();
             }
             tmp.conv_attributes = problem.GetConv().attribute;
             return tmp;
@@ -1180,6 +1180,11 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                 //debug
                 miopen::checkNumericsInput(handle, xDesc, x);
 
+                auto type = xDesc.GetType();
+                auto num_elem = workSpaceSize / GetTypeSize(type);
+                MIOPEN_LOG_I("Im2Col workspace numerics, data_size: " << GetTypeSize(type));
+                miopen::checkNumericsInput(handle, num_elem, type, workSpace);
+
                 iteration_time += Im2ColGPU(handle,
                                             spatial_dim,
                                             x,
@@ -1194,8 +1199,10 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                                             workSpace,
                                             xDesc.GetType());
 
-                 //debug
-                 miopen::checkNumericsOutput(handle, xDesc, x);
+                //debug
+                miopen::checkNumericsOutput(handle, xDesc, x);
+                MIOPEN_LOG_I("Im2Col workspace numerics");
+                miopen::checkNumericsOutput(handle, num_elem, type, workSpace);
 
                 std::size_t wksp_offset = 0;
                 if(wDesc.GetType() == miopenInt8)

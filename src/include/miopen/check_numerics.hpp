@@ -19,7 +19,9 @@ struct CheckNumerics
 bool CheckNumericsEnabled(int bitMask = -1);
 
 bool checkNumericsInput(const Handle& handle, const TensorDescriptor& dDesc, ConstData_t data);
+bool checkNumericsInput(const Handle& handle, int numElements, miopenDataType_t dataType, ConstData_t data);
 bool checkNumericsOutput(const Handle& handle, const TensorDescriptor& dDesc, ConstData_t data);
+bool checkNumericsOutput(const Handle& handle, int numElements, miopenDataType_t dataType, ConstData_t data);
 bool checkNumericsImpl(
     const Handle& handle, int mode, const TensorDescriptor& dDesc, ConstData_t data, bool isInput);
 } // namespace miopen

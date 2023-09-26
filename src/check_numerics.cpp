@@ -73,9 +73,9 @@ std::string GetKernelName(miopenDataType_t data_type)
 }
 
 bool checkNumericsImpl(
-    const Handle& handle, int mode, const TensorDescriptor& dDesc, ConstData_t data, bool isInput)
+    const Handle& handle, int mode, int numElements, miopenDataType_t dataType, ConstData_t data, bool isInput,
+    const std::optional<TensorDescriptor>& dDesc = std::nullopt)
 {
-    int numElements = dDesc.GetElementSize();
     CheckNumericsResult abnormal_h;
     auto abnormal_d =
         handle.Create(sizeof(CheckNumericsResult)); // TODO - someday avoid slow malloc/free here
@@ -85,7 +85,7 @@ bool checkNumericsImpl(
     const int computeStats       = (mode & CheckNumerics::ComputeStats);
     // TODO - some constants we should get from the device:
     std::string program_name      = "MIOpenCheckNumerics.cpp";
-    std::string kernel_name       = GetKernelName(dDesc.GetType());
+    std::string kernel_name       = GetKernelName(dataType);
     const std::vector<size_t> vld = {size_t{threadsPerBlock}, size_t{1}, size_t{1}};
     const std::vector<size_t> vgd = {numBlocks, size_t{1}, size_t{1}};
     handle.AddKernel(
@@ -102,8 +102,9 @@ bool checkNumericsImpl(
                    (isInput ? "INPUT " : "OUTPUT")
                        << " ptr=" << data << " zeros=" << abnormal_h.hasZero
                        << " nans=" << abnormal_h.hasNan << " infs=" << abnormal_h.hasInf 
-                       << " infVal= 0b"<< std::bitset<32>(abnormal_h.infVal) <<  "  {"
-                       << dDesc << "}");
+                       << " infVal= 0b"<< std::bitset<32>(abnormal_h.infVal)
+                       << (dDesc ? static_cast<std::ostringstream &&>(std::ostringstream("  {") << dDesc.value() << "}").str() : "")
+                       );
         if( isAbnormal )
         {
             /*
@@ -149,12 +150,26 @@ bool checkNumericsImpl(
     return isAbnormal;
 };
 
+bool checkNumericsImpl(
+    const Handle& handle, int mode, const TensorDescriptor& dDesc, ConstData_t data, bool isInput)
+{
+    int numElements = dDesc.GetElementSize();
+    miopenDataType_t type = dDesc.GetType();
+    return checkNumericsImpl(handle, mode, numElements, type, data, isInput, dDesc);
+}
+
 // Checks data for input
 // Returns: 1 if abnormal value (inf or nan) detected in specified data, 0 otherwise
 bool checkNumericsInput(const Handle& handle, const TensorDescriptor& dDesc, ConstData_t data)
 {
     return checkNumericsImpl(
         handle, static_cast<int>(miopen::Value(MIOPEN_CHECK_NUMERICS{})), dDesc, data, true);
+}
+
+bool checkNumericsInput(const Handle& handle, int numElements, miopenDataType_t dataType, ConstData_t data)
+{
+    return checkNumericsImpl(
+        handle, static_cast<int>(miopen::Value(MIOPEN_CHECK_NUMERICS{})), numElements, dataType, data, true);
 }
 
 // Synchronizes to wait for kernel to finish, then checks data for output:
@@ -167,4 +182,11 @@ bool checkNumericsOutput(const Handle& handle, const TensorDescriptor& dDesc, Co
         handle, static_cast<int>(miopen::Value(MIOPEN_CHECK_NUMERICS{})), dDesc, data, false);
 }
 
+bool checkNumericsOutput(const Handle& handle, int numElements, miopenDataType_t dataType, ConstData_t data)
+{
+    handle.Finish();
+
+    return checkNumericsImpl(
+        handle, static_cast<int>(miopen::Value(MIOPEN_CHECK_NUMERICS{})), numElements, dataType, data, false);
+}
 } // namespace miopen
