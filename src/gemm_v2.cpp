@@ -406,6 +406,9 @@ miopenStatus_t CallGemm(const Handle& handle,
                         GemmBackend_t gemm_backend)
 {
     MIOPEN_LOG_I2("gemm_desc: " << gemm_desc);
+    MIOPEN_LOG_I2("a_offset: " << a_offset << std::endl
+    << "b_offset: " << a_offset << std::endl
+    << "c_offset: " << a_offset << std::endl);
 
     gemm_backend = enforce_gemm_backend(gemm_desc.dataType, gemm_backend);
 

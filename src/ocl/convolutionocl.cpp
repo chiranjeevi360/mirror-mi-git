@@ -439,17 +439,23 @@ static void ConvForwardCheckNumerics(const Handle& handle,
     flag |= miopen::checkNumericsInput(handle, tensors.xDesc, tensors.x);
     flag |= miopen::checkNumericsInput(handle, tensors.wDesc, tensors.w);
 
+    const char* file_name = miopen::GetStringEnv(MIOPEN_DUMP_TENSOR_PATH{});
+    if(static_cast<bool>(file_name))
+    {
+        std::string file_name_str = file_name;
+        DumpTensorToFileFromDevice(handle, tensors.yDesc, tensors.y, file_name_str + "_yin.bin");
+    }
+
     worker();
 
     flag |= miopen::checkNumericsOutput(handle, tensors.yDesc, tensors.y);
 
-    const char* file_name = miopen::GetStringEnv(MIOPEN_DUMP_TENSOR_PATH{});
     if(flag && static_cast<bool>(file_name))
     {
         std::string file_name_str = file_name;
         DumpTensorToFileFromDevice(handle, tensors.xDesc, tensors.x, file_name_str + "_x.bin");
         DumpTensorToFileFromDevice(handle, tensors.wDesc, tensors.w, file_name_str + "_w.bin");
-        DumpTensorToFileFromDevice(handle, tensors.yDesc, tensors.y, file_name_str + "_y.bin");
+        DumpTensorToFileFromDevice(handle, tensors.yDesc, tensors.y, file_name_str + "_yout.bin");
         DumpTensorToFileFromDevice(handle, workSpaceSize, workSpace, file_name_str + "_workspace.bin");
         abort();
     }
