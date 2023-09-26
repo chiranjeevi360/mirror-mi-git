@@ -1177,14 +1177,6 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                 std::size_t out_offset = i * wei_k * out_spatial_size;
                 std::size_t in_offset  = i * in_c * in_spatial_size;
 
-                //debug
-                miopen::checkNumericsInput(handle, xDesc, x);
-
-                auto type = xDesc.GetType();
-                auto num_elem = workSpaceSize / GetTypeSize(type);
-                MIOPEN_LOG_I("Im2Col workspace numerics, data_size: " << GetTypeSize(type));
-                miopen::checkNumericsInput(handle, num_elem, type, workSpace);
-
                 iteration_time += Im2ColGPU(handle,
                                             spatial_dim,
                                             x,
@@ -1200,8 +1192,9 @@ ConvSolution GemmFwdRest::GetSolution(const ExecutionContext& context,
                                             xDesc.GetType());
 
                 //debug
-                miopen::checkNumericsOutput(handle, xDesc, x);
-                MIOPEN_LOG_I("Im2Col workspace numerics");
+                auto type = xDesc.GetType();
+                auto num_elem = workSpaceSize / GetTypeSize(type);
+                MIOPEN_LOG_I("Im2Col workspace numerics, num_elem: " << num_elem << ", data_size: " << GetTypeSize(type));
                 miopen::checkNumericsOutput(handle, num_elem, type, workSpace);
 
                 std::size_t wksp_offset = 0;

@@ -30,6 +30,7 @@
 #include <miopen/tensor.hpp>
 #include <miopen/handle.hpp>
 #include <miopen/datatype.hpp>
+#include <miopen/check_numerics.hpp>
 
 #if MIOPEN_BACKEND_HIP
 #include <miopen/hipoc_kernel.hpp>
@@ -149,6 +150,23 @@ rocblas_status miopen_rocblas_gemm_ex3(const miopen::Handle& handle,
     if(gemm_desc.conv_attributes.fp8rounding_mode.Get() == miopenF8RoundingModeStochastic)
         flags = flags | rocblas_gemm_flags::rocblas_gemm_flags_stochastic_rounding;
 
+    //debug
+    auto base_a = static_cast<const T*>(A);
+    auto base_b = static_cast<const T*>(B);
+    auto base_c = static_cast<const T*>(C);
+    MIOPEN_LOG_I2("rocblas_gemm_ex3 pointers: " << std::endl
+        << "  A: base(" << base_a << ") + offset(" << a_offset << ") * size(" << sizeof(T) << ") ="<< base_a + a_offset << std::endl
+        << "  B: base(" << base_b << ") + offset(" << b_offset << ") * size(" << sizeof(T) << ") ="<< base_b + b_offset << std::endl
+        << "  C: base(" << base_c << ") + offset(" << c_offset << ") * size(" << sizeof(T) << ") ="<< base_c + c_offset
+        );
+
+    const char* file_name = miopen::GetStringEnv(MIOPEN_DUMP_TENSOR_PATH{});
+    if(static_cast<bool>(file_name))
+    {
+        std::string file_name_str = file_name;
+        DumpTensorToFileFromDevice(handle, gemm_desc.m * gemm_desc.n * sizeof(T), C, file_name_str + "_rocblas_gemm_ex3_C.bin");
+    }
+
     rb_status = // cppcheck-suppress redundantInitialization
         rocblas_gemm_ex3(handle.rhandle().get(),
                          gemm_desc.transA ? rocblas_operation_transpose : rocblas_operation_none,
@@ -174,6 +192,27 @@ rocblas_status miopen_rocblas_gemm_ex3(const miopen::Handle& handle,
                          rocblas_gemm_algo::rocblas_gemm_algo_standard,
                          0,
                          flags); // gfx90a_alt_impl));
+
+    //debug
+    bool flag = false;
+    miopenDataType_t type = miopenHalf;
+    if(typeid(T) == typeid(rocblas_half))
+        type = miopenHalf;
+    else if(typeid(T) == typeid(char))
+        type = miopenFloat8;
+    auto num_elem = gemm_desc.m * gemm_desc.n;
+    flag |= miopen::checkNumericsOutput(handle, num_elem, type, static_cast<const T*>(C) + c_offset);
+
+    if(flag && static_cast<bool>(file_name))
+    {
+        std::string file_name_str = file_name;
+        DumpTensorToFileFromDevice(handle, gemm_desc.m * gemm_desc.k * sizeof(T), A, file_name_str + "_rocblas_gemm_ex3_A.bin");
+        DumpTensorToFileFromDevice(handle, gemm_desc.k * gemm_desc.n * sizeof(T), B, file_name_str + "_rocblas_gemm_ex3_B.bin");
+        DumpTensorToFileFromDevice(handle, gemm_desc.m * gemm_desc.n * sizeof(T), C, file_name_str + "_rocblas_gemm_ex3_D.bin");
+        abort();
+    }
+
+
     return rb_status;
 #pragma clang diagnostic pop
 #endif
@@ -407,8 +446,8 @@ miopenStatus_t CallGemm(const Handle& handle,
 {
     MIOPEN_LOG_I2("gemm_desc: " << gemm_desc);
     MIOPEN_LOG_I2("a_offset: " << a_offset << std::endl
-    << ", b_offset: " << b_offset << std::endl
-    << ", c_offset: " << c_offset);
+    << "b_offset: " << b_offset << std::endl
+    << "c_offset: " << c_offset);
 
     gemm_backend = enforce_gemm_backend(gemm_desc.dataType, gemm_backend);
 

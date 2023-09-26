@@ -51,6 +51,8 @@ MIOPEN_DECLARE_ENV_VAR(MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP16_ALT_IMPL)
 MIOPEN_DECLARE_ENV_VAR(MIOPEN_DEBUG_CONVOLUTION_DETERMINISTIC)
 MIOPEN_DECLARE_ENV_VAR(MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP8_ROUNDING_MODE)
 MIOPEN_DECLARE_ENV_VAR(MIOPEN_DEBUG_CONVOLUTION_ATTRIB_FP8_ROUNDING_SEED)
+MIOPEN_DECLARE_ENV_VAR(MIOPEN_DUMP_TENSOR_PATH)
+
 
 namespace miopen {
 
@@ -422,6 +424,11 @@ std::ostream& operator<<(std::ostream& stream, const ConvolutionDescriptor& c);
 
 void DumpTensorToFileFromDevice(const miopen::Handle& handle,
                                 const miopen::TensorDescriptor& tDesc,
+                                ConstData_t dData,
+                                const std::string& filename);
+
+void DumpTensorToFileFromDevice(const miopen::Handle& handle,
+                                const size_t num_bytes,
                                 ConstData_t dData,
                                 const std::string& filename);
 
