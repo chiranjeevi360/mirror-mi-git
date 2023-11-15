@@ -638,11 +638,10 @@ pipeline {
                                                   needs_reboot:   false) 
                     }
                 }
-                stage('HipNoGPU Debug Build Test') {
+                stage('HipNoGPU Build Test') {
                     agent{ label rocmnode("nogpu") }
                     steps{
-                        buildHipClangJobAndReboot(build_type:     "debug",
-                                                  setup_flags:    "-DMIOPEN_BACKEND=HIPNOGPU", 
+                        buildHipClangJobAndReboot(setup_flags:    "-DMIOPEN_BACKEND=HIPNOGPU", 
                                                   config_targets: "all", 
                                                   build_install:  "true",
                                                   build_fin:      "ON", 
