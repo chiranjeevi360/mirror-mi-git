@@ -697,15 +697,21 @@ rocm_set_soversion(MIOpen ${MIOpen_SOVERSION})
 
 clang_tidy_check(MIOpen)
 
-find_package(zstd)
-if(zstd_FOUND)
-    target_link_libraries(MIOpen PRIVATE $<IF:$<TARGET_EXISTS:zstd::libzstd_shared>,zstd::libzstd_shared,zstd::libzstd_static>)
+if(TARGET zstd::libzstd_shared)
+    target_link_libraries(MIOpen PRIVATE zstd::libzstd_shared)
+elseif(TARGET zstd::libzstd_static)
+    target_link_libraries(MIOpen PRIVATE zstd::libzstd_static)
 endif()
 
 function(target_internal_library TARGET)
     target_link_libraries(${TARGET} PRIVATE ${ARGN})
     target_link_libraries(${TARGET} INTERFACE $<BUILD_INTERFACE:${ARGN}>)
 endfunction()
+
+if(NOT MIOPEN_BOOST_USE_SYSTEM)
+    target_internal_library(MIOpen Boost::any Boost::container Boost::date_time Boost::hof
+        Boost::interprocess Boost::range Boost::thread Boost::variant)
+endif()
 
 target_include_directories(MIOpen PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/include>

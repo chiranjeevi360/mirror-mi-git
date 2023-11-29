@@ -88,13 +88,11 @@ set(MIOPEN_ENABLE_SQLITE_KERN_CACHE On CACHE BOOL "")
 
 # By default build shared libraries
 option(BUILD_SHARED_LIBS "Create shared libraries" ON)
+option(Boost_USE_STATIC_LIBS "Use boost static libraries" ON)
+add_definitions(-DBOOST_ALL_NO_LIB=1)
 
-if(MIOPEN_ENABLE_SQLITE)
-    # MIOpen now depends on SQLite as well
-    find_package(SQLite3 REQUIRED)
-endif()
-find_package(BZip2 REQUIRED)
-find_package(nlohmann_json 3.9.1 REQUIRED)
+add_subdirectory(extern)
+
 if(MIOPEN_ENABLE_SQLITE_KERN_CACHE AND NOT MIOPEN_ENABLE_SQLITE)
     message(FATAL_ERROR "MIOPEN_ENABLE_SQLITE_KERN_CACHE requires MIOPEN_ENABLE_SQLITE")
 endif()
@@ -390,12 +388,6 @@ if(MIOPEN_USE_HIPRTC)
     message(STATUS "Build with HIPRTC ${hiprtc_VERSION}")
 endif()
 
-option(Boost_USE_STATIC_LIBS "Use boost static libraries" ON)
-set(BOOST_COMPONENTS filesystem)
-add_definitions(-DBOOST_ALL_NO_LIB=1)
-find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-
-find_path(HALF_INCLUDE_DIR half/half.hpp)
 message(STATUS "HALF_INCLUDE_DIR: ${HALF_INCLUDE_DIR}")
 
 option( MIOPEN_DEBUG_FIND_DB_CACHING "Use system find-db caching" ON)
@@ -410,11 +402,6 @@ else()
     set( DATA_INSTALL_DIR ${CMAKE_INSTALL_DATADIR}/${MIOPEN_INSTALL_DIR} )
     set( DATABASE_INSTALL_DIR ${DATA_INSTALL_DIR}/db )
 endif()    
-
-if(MIOPEN_ENABLE_AI_KERNEL_TUNING OR MIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK)
-    find_package(frugally-deep CONFIG REQUIRED)
-    find_package(Eigen3 REQUIRED)
-endif()
 
 if(WIN32)
     set(KERNELS_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
