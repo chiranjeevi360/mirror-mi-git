@@ -241,7 +241,7 @@ public:
                 return;
             }
 
-            if(!(std::filesystem::exists(directory)))
+            if(!std::filesystem::exists(directory))
             {
                 if(!std::filesystem::create_directories(directory))
                     MIOPEN_LOG_W("Unable to create a directory: " << directory);
