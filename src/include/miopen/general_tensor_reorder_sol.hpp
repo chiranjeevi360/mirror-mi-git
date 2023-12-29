@@ -30,6 +30,7 @@
 #include <miopen/op_kernel_args.hpp>
 #include <miopen/execution_context.hpp>
 #include <cstdint>
+#include <filesystem>
 #include <vector>
 
 namespace miopen {
@@ -58,7 +59,7 @@ struct GenericReorderSolutionImpl
     // TODO batched transpose API
     solver::KernelInfo GetKernelInfo() const;
     std::vector<OpKernelArg> GetKernelArg() const;
-    std::string GetKernelFileName() const;
+    std::filesystem::path GetKernelFileName() const;
     std::string GetKernelName() const;
     bool IsSkippable() const;
     size_t GetOutputTensorSize() const;

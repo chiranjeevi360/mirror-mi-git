@@ -63,7 +63,7 @@ class SQLite::impl
         void operator()(sqlite3* ptr)
         {
             const auto c_filename = sqlite3_db_filename(ptr, "main");
-            std::string filename_((c_filename == nullptr) ? "" : c_filename);
+            std::filesystem::path filename_((c_filename == nullptr) ? "" : c_filename);
             SQLite::Retry([&]() { return sqlite3_close(ptr); }, filename_);
             // Future: Sync the file back to disk, unless disk I/O is disabled
             // Get the page_count: pragma page_count;
@@ -73,7 +73,7 @@ class SQLite::impl
     };
     using sqlite3_ptr = std::unique_ptr<sqlite3, SQLiteCloser>;
 #if MIOPEN_EMBED_DB
-    int CreateInMemDb(const boost::filesystem::path& filepath, bool is_system)
+    int CreateInMemDb(const std::filesystem::path& filepath, bool is_system)
     {
         sqlite3* ptr_tmp = nullptr;
         int rc           = 0;
@@ -145,13 +145,13 @@ class SQLite::impl
         return rc;
     }
 #endif
-    int CreateFileDb(const boost::filesystem::path& filepath, bool is_system)
+    int CreateFileDb(const std::filesystem::path& filepath, bool is_system)
     {
         sqlite3* ptr_tmp = nullptr;
         int rc           = 0;
         if(is_system)
         {
-            if(boost::filesystem::file_size(filepath) <
+            if(std::filesystem::file_size(filepath) <
                512) // size of a very small database, Empty MIOpen DBs are 20 kb
             {
                 rc = -1;
@@ -175,14 +175,13 @@ class SQLite::impl
     }
 
 public:
-    impl(const std::string& filename_, bool is_system)
+    impl(const std::filesystem::path& filename_, bool is_system)
     {
-        boost::filesystem::path filepath(filename_);
         int rc = 0;
 #if MIOPEN_EMBED_DB
-        rc = CreateInMemDb(filepath, is_system);
+        rc = CreateInMemDb(filename_, is_system);
 #else
-        rc = CreateFileDb(filepath, is_system);
+        rc = CreateFileDb(filename_, is_system);
 #endif
         isValid = (rc == 0);
         if(isValid)
@@ -231,7 +230,7 @@ SQLite::result_type SQLite::Exec(const std::string& query) const
     return res;
 }
 
-int SQLite::Retry(std::function<int()> f, [[maybe_unused]] std::string filename)
+int SQLite::Retry(std::function<int()> f, [[maybe_unused]] const std::filesystem::path& filename)
 {
 #if !MIOPEN_ENABLE_SQLITE_BACKOFF
     int rc = f();
@@ -265,13 +264,13 @@ int SQLite::Retry(std::function<int()> f, [[maybe_unused]] std::string filename)
         else
             return rc;
     }
-    MIOPEN_THROW("Timeout while waiting for Database: " + filename);
+    MIOPEN_THROW("Timeout while waiting for Database: " + filename.string());
 #endif
 }
 
 int SQLite::Retry(std::function<int()> f) const
 {
-    std::string filename(sqlite3_db_filename(pImpl->ptrDb.get(), "main"));
+    std::filesystem::path filename{sqlite3_db_filename(pImpl->ptrDb.get(), "main")};
     return SQLite::Retry(f, filename);
 }
 
@@ -320,7 +319,7 @@ public:
     sqlite3_stmt_ptr ptrStmt = nullptr;
 };
 
-SQLite::SQLite(const std::string& filename_, bool is_system)
+SQLite::SQLite(const std::filesystem::path& filename_, bool is_system)
     : pImpl{std::make_unique<impl>(filename_, is_system)}
 {
 }
@@ -380,7 +379,7 @@ int SQLite::Statement::BindInt64(int idx, const int64_t num)
     return 0;
 }
 
-SQLitePerfDb::SQLitePerfDb(const std::string& filename_, bool is_system_)
+SQLitePerfDb::SQLitePerfDb(const std::filesystem::path& filename_, bool is_system_)
     : SQLiteBase(filename_, is_system_)
 {
     if(DisableUserDbFileIO && !is_system)
@@ -391,7 +390,7 @@ SQLitePerfDb::SQLitePerfDb(const std::string& filename_, bool is_system_)
         if(filename.empty())
             MIOPEN_LOG_I("database not present");
         else
-            MIOPEN_LOG_I(filename + " database invalid");
+            MIOPEN_LOG_I(filename.string() + " database invalid");
         return;
     }
 
@@ -458,7 +457,7 @@ SQLitePerfDb::SQLitePerfDb(const std::string& filename_, bool is_system_)
         }
         if(!CheckTableColumns("perf_db", {"solver", "config", "params"}))
         {
-            MIOPEN_LOG_W("Invalid fields in table: perf_db disabling access to " + filename);
+            MIOPEN_LOG_W("Invalid fields in table: perf_db disabling access to " + filename.string());
             dbInvalid = true;
         }
     }

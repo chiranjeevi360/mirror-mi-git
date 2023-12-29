@@ -70,7 +70,7 @@ LockFile::LockFile(const std::filesystem::path& path_, PassKey) : path(path_)
         if(!std::filesystem::exists(path))
         {
             if(!std::ofstream{path})
-                MIOPEN_THROW(std::string("Error creating file <") + path.string() + "> for locking.");
+                MIOPEN_THROW("Error creating file <" + path.string() + "> for locking.");
             std::filesystem::permissions(path, std::filesystem::perms::all);
         }
         flock = path.string().c_str();

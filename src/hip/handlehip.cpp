@@ -43,7 +43,6 @@
 #include <miopen/write_file.hpp>
 #endif
 
-#include <boost/filesystem.hpp>
 #include <miopen/load_file.hpp>
 
 #ifndef _WIN32
@@ -434,7 +433,7 @@ void Handle::Copy(ConstData_t src, Data_t dest, std::size_t size) const
 
 KernelInvoke Handle::AddKernel(const std::string& algorithm,
                                const std::string& network_config,
-                               const std::string& program_name,
+                               const std::filesystem::path& program_name,
                                const std::string& kernel_name,
                                const std::vector<size_t>& vld,
                                const std::vector<size_t>& vgd,
@@ -496,7 +495,7 @@ KernelInvoke Handle::Run(Kernel k) const
         return k.Invoke(this->GetStream());
 }
 
-Program Handle::LoadProgram(const std::string& program_name,
+Program Handle::LoadProgram(const std::filesystem::path& program_name,
                             std::string params,
                             const std::string& kernel_src) const
 {
@@ -505,7 +504,7 @@ Program Handle::LoadProgram(const std::string& program_name,
 
     std::string orig_params = params; // make a copy for target ID fallback
 
-    if(!miopen::EndsWith(program_name, ".mlir"))
+    if(program_name.extension() == ".mlir")
         params = params + " -mcpu=" + this->GetTargetProperties().Name();
 
     auto hsaco = miopen::LoadBinary(
@@ -530,23 +529,23 @@ Program Handle::LoadProgram(const std::string& program_name,
     {
         CompileTimer ct;
         auto p = HIPOCProgram{program_name, params, this->GetTargetProperties(), kernel_src};
-        ct.Log("Kernel", program_name);
+        ct.Log("Kernel", program_name.string());
 
 // Save to cache
 #if MIOPEN_ENABLE_SQLITE_KERN_CACHE
         miopen::SaveBinary(p.IsCodeObjectInMemory()
                                ? p.GetCodeObjectBlob()
-                               : miopen::LoadFile(p.GetCodeObjectPathname().string()),
+                               : miopen::LoadFile(p.GetCodeObjectPathname()),
                            this->GetTargetProperties(),
                            this->GetMaxComputeUnits(),
                            program_name,
                            params);
 #else
-        auto path = miopen::GetCachePath(false) / boost::filesystem::unique_path();
+        auto path = miopen::GetCachePath(false) / std::filesystem::unique_path();
         if(p.IsCodeObjectInMemory())
             miopen::WriteFile(p.GetCodeObjectBlob(), path);
         else
-            boost::filesystem::copy_file(p.GetCodeObjectPathname(), path);
+            std::filesystem::copy_file(p.GetCodeObjectPathname(), path);
         miopen::SaveBinary(path, this->GetTargetProperties(), program_name, params);
 #endif
         p.FreeCodeObjectFileStorage();
@@ -558,19 +557,19 @@ Program Handle::LoadProgram(const std::string& program_name,
     }
 }
 
-bool Handle::HasProgram(const std::string& program_name, const std::string& params) const
+bool Handle::HasProgram(const std::filesystem::path& program_name, const std::string& params) const
 {
     return this->impl->cache.HasProgram(program_name, params);
 }
 
 void Handle::AddProgram(Program prog,
-                        const std::string& program_name,
+                        const std::filesystem::path& program_name,
                         const std::string& params) const
 {
     this->impl->cache.AddProgram(prog, program_name, params);
 }
 
-void Handle::ClearProgram(const std::string& program_name, const std::string& params) const
+void Handle::ClearProgram(const std::filesystem::path& program_name, const std::string& params) const
 {
     this->impl->cache.ClearProgram(program_name, params);
 }

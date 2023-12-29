@@ -147,14 +147,19 @@ KDb GetDb(const TargetProperties& target, size_t num_cu)
 std::filesystem::path
 GetCacheFile(const std::string& device, const std::string& name, const std::string& args)
 {
+#ifdef _WIN32
+    const std::string filename = name + ".obj";
+    return GetCachePath(false) / miopen::md5(device + "-" + args) / filename;
+#else
     const std::string filename = name + ".o";
     return GetCachePath(false) / miopen::md5(device + ":" + args) / filename;
+#endif
 }
 
 #if MIOPEN_ENABLE_SQLITE_KERN_CACHE
 std::string LoadBinary(const TargetProperties& target,
                        const size_t num_cu,
-                       const std::string& name,
+                       const std::filesystem::path& name,
                        const std::string& args)
 {
     if(miopen::IsCacheDisabled())
@@ -162,7 +167,11 @@ std::string LoadBinary(const TargetProperties& target,
 
     auto db = GetDb(target, num_cu);
 
-    const std::string filename = name + ".o";
+#ifdef _WIN32
+    const std::string filename = name.string() + ".obj";
+#else
+    const std::string filename = name.string() + ".o";
+#endif
     const KernelConfig cfg{filename, args, ""};
 
     MIOPEN_LOG_I2("Loading binary for: " << filename << "; args: " << args);
@@ -179,10 +188,10 @@ std::string LoadBinary(const TargetProperties& target,
     }
 }
 
-void SaveBinary(const std::string& hsaco,
+void SaveBinary(const std::filesystem::path& hsaco,
                 const TargetProperties& target,
                 const std::size_t num_cu,
-                const std::string& name,
+                const std::filesystem::path& name,
                 const std::string& args)
 {
     if(miopen::IsCacheDisabled())
@@ -190,8 +199,8 @@ void SaveBinary(const std::string& hsaco,
 
     auto db = GetDb(target, num_cu);
 
-    const std::string filename = name + ".o";
-    KernelConfig cfg{filename, args, hsaco};
+    const std::string filename = name.string() + ".o";
+    KernelConfig cfg{filename, args, hsaco.string()};
 
     MIOPEN_LOG_I2("Saving binary for: " << filename << "; args: " << args);
     db.StoreRecord(cfg);

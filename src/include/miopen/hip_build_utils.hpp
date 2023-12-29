@@ -32,15 +32,16 @@
 #include <miopen/tmp_dir.hpp>
 #include <miopen/write_file.hpp>
 #include <boost/optional.hpp>
+#include <filesystem>
 #include <string>
 
 namespace miopen {
 
 std::filesystem::path HipBuild(boost::optional<miopen::TmpDir>& tmp_dir,
-                                 const std::string& filename,
-                                 std::string src,
-                                 std::string params,
-                                 const TargetProperties& target);
+                               const std::filesystem::path& filename,
+                               std::string src,
+                               std::string params,
+                               const TargetProperties& target);
 
 void bin_file_to_str(const std::filesystem::path& file, std::string& buf);
 

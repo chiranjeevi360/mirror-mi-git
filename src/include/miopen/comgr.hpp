@@ -30,25 +30,26 @@
 #if MIOPEN_USE_COMGR
 
 #include <miopen/target_properties.hpp>
+#include <filesystem>
 #include <string>
 #include <vector>
 
 namespace miopen {
 namespace comgr {
 
-void BuildHip(const std::string& name,
+void BuildHip(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
               std::vector<char>& binary);
 
-void BuildOcl(const std::string& name,
+void BuildOcl(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
               std::vector<char>& binary);
 
-void BuildAsm(const std::string& name,
+void BuildAsm(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
@@ -64,7 +65,7 @@ void BuildAsm(const std::string& name,
 namespace miopen {
 namespace hiprtc {
 
-void BuildHip(const std::string& name,
+void BuildHip(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,

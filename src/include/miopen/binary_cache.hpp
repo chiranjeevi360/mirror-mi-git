@@ -55,29 +55,29 @@ void SaveBinary(const std::filesystem::path& binary_path,
 #else
 std::string LoadBinary(const TargetProperties& target,
                        std::size_t num_cu,
-                       const std::string& name,
+                       const std::filesystem::path& name,
                        const std::string& args);
 
-void SaveBinary(const std::string& hsaco,
+void SaveBinary(const std::filesystem::path& hsaco,
                 const TargetProperties& target,
                 std::size_t num_cu,
-                const std::string& name,
+                const std::filesystem::path& name,
                 const std::string& args);
 
 #if FIN_OLD_BINARY_CACHE_COMPAT
 inline std::string LoadBinary(const TargetProperties& target,
                               std::size_t num_cu,
-                              const std::string& name,
+                              const std::filesystem::path& name,
                               const std::string& args,
                               bool)
 {
     return LoadBinary(target, num_cu, name, args);
 }
 
-inline void SaveBinary(const std::string& hsaco,
+inline void SaveBinary(const std::filesystem::path& hsaco,
                        const TargetProperties& target,
                        std::size_t num_cu,
-                       const std::string& name,
+                       const std::filesystem::path& name,
                        const std::string& args,
                        bool)
 {

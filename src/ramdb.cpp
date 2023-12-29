@@ -42,7 +42,7 @@ namespace miopen {
 
 std::filesystem::path RamDb::GetTimeFilePath(const std::filesystem::path& path) { return path.string() + ".time"; }
 
-static ramdb_clock::time_point GetDbModificationTime(const std::string& path)
+static ramdb_clock::time_point GetDbModificationTime(const std::filesystem::path& path)
 {
     const auto time_file_path = RamDb::GetTimeFilePath(path);
     auto file                 = std::ifstream{time_file_path};

@@ -39,6 +39,7 @@
 #include <array>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
 #include <random>
@@ -329,11 +330,11 @@ protected:
     }
 
     template <class TKey, class TValue, size_t count>
-    static void RawWrite(const std::string& db_path,
+    static void RawWrite(const std::filesystem::path& db_path,
                          const TKey& key,
                          const std::array<std::pair<std::string, TValue>, count> values)
     {
-        SQLitePerfDb tmp_inst(std::string(db_path), false);
+        SQLitePerfDb tmp_inst(db_path, false);
         for(const auto& id_values : values)
         {
             tmp_inst.UpdateUnsafe(key, id_values.first, id_values.second);
@@ -952,7 +953,7 @@ public:
             EXPECT_EQUAL(child.Wait(), 0);
         }
 
-        std::remove(lock_file_path.c_str());
+        std::filesystem::remove(lock_file_path);
     }
 
     static void WorkItem(unsigned int id, const std::string& db_path)
@@ -967,7 +968,7 @@ public:
     }
 
 private:
-    static std::string LockFilePath(const std::string& db_path) { return db_path + ".test.lock"; }
+    static std::filesystem::path LockFilePath(const std::string& db_path) { return db_path + ".test.lock"; }
 };
 
 class DbMultiFileTest : public DbTest

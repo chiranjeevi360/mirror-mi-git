@@ -775,7 +775,7 @@ static inline bool IsWave64Enforced(const OptionList& opts)
         opts.begin(), opts.end(), [](const std::string& s) { return s == "-mwavefrontsize64"; });
 }
 
-void BuildHip(const std::string& name,
+void BuildHip(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
@@ -785,7 +785,7 @@ void BuildHip(const std::string& name,
     try
     {
         const Dataset inputs;
-        inputs.AddData(name, text, AMD_COMGR_DATA_KIND_SOURCE);
+        inputs.AddData(name.string(), text, AMD_COMGR_DATA_KIND_SOURCE);
 
         // For OCL and ASM sources, we do insert contents of include
         // files directly into the source text during library build phase by means
@@ -905,7 +905,7 @@ void BuildHip(const std::string& name,
     }
 }
 
-void BuildOcl(const std::string& name,
+void BuildOcl(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
@@ -915,7 +915,7 @@ void BuildOcl(const std::string& name,
     try
     {
         const Dataset inputs;
-        inputs.AddData(name, text, AMD_COMGR_DATA_KIND_SOURCE);
+        inputs.AddData(name.string(), text, AMD_COMGR_DATA_KIND_SOURCE);
         const ActionInfo action;
 #if OCL_STANDARD == 200
         action.SetLanguage(AMD_COMGR_LANGUAGE_OPENCL_2_0);
@@ -991,7 +991,7 @@ void BuildOcl(const std::string& name,
     }
 }
 
-void BuildAsm(const std::string& name,
+void BuildAsm(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,
@@ -1001,7 +1001,7 @@ void BuildAsm(const std::string& name,
     try
     {
         const Dataset inputs;
-        inputs.AddData(name, text, AMD_COMGR_DATA_KIND_SOURCE);
+        inputs.AddData(name.string(), text, AMD_COMGR_DATA_KIND_SOURCE);
 
         const ActionInfo action;
         SetIsaName(action, target);
@@ -1135,8 +1135,8 @@ static void PrintVersion()
 static void hiprtc_program_destroy(hiprtcProgram prog) { hiprtcDestroyProgram(&prog); }
 using hiprtc_program_ptr = MIOPEN_MANAGE_PTR(hiprtcProgram, hiprtc_program_destroy);
 
-static hiprtc_program_ptr CreateProgram(const char* src,
-                                        const char* name,
+static hiprtc_program_ptr CreateProgram(std::string_view src,
+                                        std::string_view name,
                                         int numHeaders,
                                         const char** headers,
                                         const char** includeNames)
@@ -1144,7 +1144,7 @@ static hiprtc_program_ptr CreateProgram(const char* src,
     hiprtcProgram prog = nullptr;
     hiprtcResult status;
     HIPRTC_CALL_INFO_NOSTATUSDEF(
-        hiprtcCreateProgram(&prog, src, name, numHeaders, headers, includeNames), name);
+        hiprtcCreateProgram(&prog, src.data(), name.data(), numHeaders, headers, includeNames), name.data());
     hiprtc_program_ptr p{prog}; // To destroy prog even if hiprtcCreateProgram() failed.
     if(status != HIPRTC_SUCCESS)
     {
@@ -1187,11 +1187,11 @@ class HiprtcProgram
     string_ptr_array include_texts{}; // Copying of text is not necessary.
     string_array include_names{};
 
-    const std::string& src_name;
+    const std::filesystem::path& src_name;
     const std::string& src_text;
 
 public:
-    HiprtcProgram(const std::string& src_name_, const std::string& src_text_)
+    HiprtcProgram(const std::filesystem::path& src_name_, const std::string& src_text_)
         : src_name(src_name_), src_text(src_text_)
     {
         LogInputFile(src_name, src_text);
@@ -1204,8 +1204,8 @@ public:
             include_names.push_back(inc_name);
             include_texts.push_back(inc_text);
         }
-        prog = CreateProgram(src_text.c_str(),
-                             src_name.c_str(),
+        prog = CreateProgram(src_text,
+                             src_name.string(),
                              include_texts.size(),
                              include_texts.data(),
                              include_names.data());
@@ -1222,7 +1222,7 @@ public:
 
         HIPRTC_CALL_INFO_THROW_MSG(
             hiprtcCompileProgram(prog.get(), c_options.size(), c_options.data()),
-            src_name,
+            src_name.string(),
             GetLog(true));
         const auto log = GetLog(false);
         if(!log.empty())
@@ -1232,13 +1232,13 @@ public:
     void GetCode(std::vector<char>& bytes) const
     {
         std::size_t sz = 0;
-        HIPRTC_CALL_INFO_THROW(hiprtcGetCodeSize(prog.get(), &sz), src_name);
+        HIPRTC_CALL_INFO_THROW(hiprtcGetCodeSize(prog.get(), &sz), src_name.string());
         bytes.resize(sz);
-        HIPRTC_CALL_INFO_THROW(hiprtcGetCode(prog.get(), &bytes[0]), src_name);
+        HIPRTC_CALL_INFO_THROW(hiprtcGetCode(prog.get(), &bytes[0]), src_name.string());
     }
 
 private:
-    void LogInputFile(const std::string& name, const std::string& content)
+    void LogInputFile(const std::filesystem::path& name, const std::string& content)
     {
         if(miopen::IsEnabled(ENV(MIOPEN_DEBUG_COMGR_LOG_SOURCE_NAMES)))
             MIOPEN_LOG_I(name << ' ' << content.size() << " bytes");
@@ -1279,7 +1279,7 @@ private:
     }
 };
 
-void BuildHip(const std::string& name,
+void BuildHip(const std::filesystem::path& name,
               const std::string& text,
               const std::string& options,
               const miopen::TargetProperties& target,

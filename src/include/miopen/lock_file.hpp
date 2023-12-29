@@ -32,7 +32,7 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/time.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <boost/interprocess/exceptions.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
 
 #include <chrono>

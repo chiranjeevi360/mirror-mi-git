@@ -41,6 +41,7 @@
 
 #include <boost/any.hpp>
 
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
@@ -2043,7 +2044,7 @@ struct ConvMPBidirectWinograd final : ConvSolver
                              const miopen::conv::ProblemDescription&) const override;
 
     // kernel_file_name for solver identification
-    static std::string GetSolverFileNames(int id)
+    static std::filesystem::path GetSolverFileNames(int id)
     {
         static const std::string names[3] = {"xform_bidirect_winograd_data.s",
                                              "xform_bidirect_winograd_filter.s",
@@ -2155,7 +2156,7 @@ private:
     GetTransformedProblem(const miopen::conv::ProblemDescription& problem) const;
 
     // kernel_file_name for solver identification
-    static std::string GetSolverFileNames(int id)
+    static std::filesystem::path GetSolverFileNames(int id)
     {
         return ConvMPBidirectWinograd<WinoDataH, WinoFilterH, WinoDataW, WinoFilterW>::
             GetSolverFileNames(id);

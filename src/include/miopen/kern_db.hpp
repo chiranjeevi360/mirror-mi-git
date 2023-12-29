@@ -40,13 +40,8 @@
 
 #include <string>
 #include <chrono>
+#include <filesystem>
 #include <thread>
-
-namespace boost {
-namespace filesystem {
-class path;
-} // namespace filesystem
-} // namespace boost
 
 namespace miopen {
 struct KernelConfig
@@ -90,9 +85,9 @@ class KernDb : public SQLiteBase<KernDb>
     std::function<std::string(std::string, unsigned int)> decompress_fn;
 
 public:
-    KernDb(const std::string& filename_, bool is_system);
+    KernDb(const std::filesystem::path& filename_, bool is_system);
     // This constructor is only intended for testing
-    KernDb(const std::string& filename_,
+    KernDb(const std::filesystem::path& filename_,
            bool is_system_,
            std::function<std::string(std::string, bool*)> compress_fn_,
            std::function<std::string(std::string, unsigned int)> decompress_fn_);

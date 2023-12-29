@@ -48,7 +48,9 @@
 #include <miopen/miopen.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
+#include <filesystem>
 
 namespace miopen {
 
@@ -67,7 +69,7 @@ public:
     Kernel AddKernel(const Handle& h,
                      const std::string& algorithm,
                      const std::string& network_config,
-                     const std::string& program_name,
+                     const std::filesystem::path& program_name,
                      const std::string& kernel_name,
                      const std::vector<size_t>& vld,
                      const std::vector<size_t>& vgd,
@@ -82,10 +84,10 @@ public:
     const std::vector<Kernel>& GetKernels(const std::string& algorithm,
                                           const std::string& network_config);
 
-    bool HasProgram(const std::string& name, const std::string& params) const;
-    void ClearProgram(const std::string& name, const std::string& params);
+    bool HasProgram(const std::filesystem::path& program_name, const std::string& params) const;
+    void ClearProgram(const std::filesystem::path& program_name, const std::string& params);
 
-    void AddProgram(Program prog, const std::string& program_name, std::string params);
+    void AddProgram(Program prog, const std::filesystem::path& program_name, std::string params);
 
     KernelCache();
 

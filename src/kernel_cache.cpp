@@ -71,30 +71,30 @@ const std::vector<Kernel>& KernelCache::GetKernels(const std::string& algorithm,
     return empty;
 }
 
-bool KernelCache::HasProgram(const std::string& name, const std::string& params) const
+bool KernelCache::HasProgram(const std::filesystem::path& program_name, const std::string& params) const
 {
-    const auto key = std::make_pair(name, params);
+    const auto key = std::make_pair(program_name.string(), params);
     return program_map.count(key) > 0;
 }
 
-void KernelCache::ClearProgram(const std::string& name, const std::string& params)
+void KernelCache::ClearProgram(const std::filesystem::path& program_name, const std::string& params)
 {
-    if(HasProgram(name, params))
+    if(HasProgram(program_name, params))
     {
-        const auto key = std::make_pair(name, params);
+        const auto key = std::make_pair(program_name.string(), params);
         program_map.erase(key);
     }
 }
 
-void KernelCache::AddProgram(Program prog, const std::string& program_name, std::string params)
+void KernelCache::AddProgram(Program prog, const std::filesystem::path& program_name, std::string params)
 {
-    program_map[std::make_pair(program_name, params)] = prog;
+    program_map[std::make_pair(program_name.string(), params)] = prog;
 }
 
 Kernel KernelCache::AddKernel(const Handle& h,
                               const std::string& algorithm,
                               const std::string& network_config,
-                              const std::string& program_name,
+                              const std::filesystem::path& program_name,
                               const std::string& kernel_name,
                               const std::vector<size_t>& vld,
                               const std::vector<size_t>& vgd,
@@ -108,7 +108,7 @@ Kernel KernelCache::AddKernel(const Handle& h,
 
     Program program;
 
-    auto program_it = program_map.find(std::make_pair(program_name, params));
+    auto program_it = program_map.find(std::make_pair(program_name.string(), params));
     if(program_it != program_map.end())
     {
         program = program_it->second;
@@ -116,7 +116,7 @@ Kernel KernelCache::AddKernel(const Handle& h,
     else
     {
         program = h.LoadProgram(program_name, params, kernel_src);
-        program_map[std::make_pair(program_name, params)] = program;
+        program_map[std::make_pair(program_name.string(), params)] = program;
     }
 
     Kernel kernel{};

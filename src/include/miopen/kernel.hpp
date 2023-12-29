@@ -26,13 +26,14 @@
 #ifndef GUARD_MIOPEN_KERNEL_HPP
 #define GUARD_MIOPEN_KERNEL_HPP
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
 #include <miopen/config.h>
 
 namespace miopen {
-std::string GetKernelSrc(std::string name);
+std::string GetKernelSrc(const std::filesystem::path& name);
 std::string GetKernelInc(std::string key);
 const std::string* GetKernelIncPtr(std::string key);
 std::vector<std::string> GetKernelIncList();

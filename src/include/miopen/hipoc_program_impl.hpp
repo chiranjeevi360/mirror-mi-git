@@ -29,9 +29,10 @@
 #include <miopen/target_properties.hpp>
 #include <miopen/manage_ptr.hpp>
 #include <miopen/tmp_dir.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>
 #include <hip/hip_runtime_api.h>
+
+#include <filesystem>
 
 namespace miopen {
 
@@ -39,29 +40,29 @@ using hipModulePtr = MIOPEN_MANAGE_PTR(hipModule_t, hipModuleUnload);
 struct HIPOCProgramImpl
 {
     HIPOCProgramImpl(){};
-    HIPOCProgramImpl(const std::string& program_name, const boost::filesystem::path& filespec);
+    HIPOCProgramImpl(const std::filesystem::path& program_name, const std::filesystem::path& filespec);
 
-    HIPOCProgramImpl(const std::string& program_name, const std::string& blob);
+    HIPOCProgramImpl(const std::filesystem::path& program_name, const std::string& blob);
 
-    HIPOCProgramImpl(const std::string& program_name,
+    HIPOCProgramImpl(const std::filesystem::path& program_name,
                      std::string params,
                      const TargetProperties& target_,
                      const std::string& kernel_src);
 
-    std::string program;
+    std::filesystem::path program;
     TargetProperties target;
-    boost::filesystem::path hsaco_file;
+    std::filesystem::path hsaco_file;
     hipModulePtr module;
     boost::optional<TmpDir> dir;
     std::vector<char> binary;
 
 #if !MIOPEN_USE_COMGR
     void
-    BuildCodeObjectInFile(std::string& params, const std::string& src, const std::string& filename);
+    BuildCodeObjectInFile(std::string& params, const std::string& src, const std::filesystem::path& filename);
 #else
     void BuildCodeObjectInMemory(const std::string& params,
                                  const std::string& src,
-                                 const std::string& filename);
+                                 const std::filesystem::path& filename);
 #endif
 
     void BuildCodeObject(std::string params, const std::string& kernel_src);
