@@ -26,49 +26,66 @@
 
 #include <miopen/tmp_dir.hpp>
 #include <miopen/env.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <miopen/errors.hpp>
 #include <miopen/logger.hpp>
 #include <miopen/process.hpp>
+
+#include <thread>
+#include <string_view>
 
 MIOPEN_DECLARE_ENV_VAR_BOOL(MIOPEN_DEBUG_SAVE_TEMP_DIR)
 MIOPEN_DECLARE_ENV_VAR_BOOL(MIOPEN_DEBUG_EXIT_STATUS_TEMP_DIR)
 
 namespace miopen {
 
-TmpDir::TmpDir(std::string prefix)
-    : path(boost::filesystem::temp_directory_path() /
-           boost::filesystem::unique_path("miopen-" + prefix + "-%%%%-%%%%-%%%%-%%%%"))
+TmpDir::TmpDir(std::string_view prefix)
+    : path{boost::filesystem::temp_directory_path()}
 {
-    boost::filesystem::create_directories(this->path);
+    std::string p{prefix.empty() ? "" :
+        (prefix[0] == '-' ? "" : "-") + std::string{prefix}};
+
+    path /= boost::filesystem::unique_path(
+        "miopen" + p + "-%%%%-%%%%-%%%%-%%%%").string();
+
+    boost::filesystem::create_directories(path);
 }
 
-TmpDir& TmpDir::operator=(TmpDir&& other) noexcept
-{
-    this->path = other.path;
-    other.path = "";
-    return *this;
-}
-
-void TmpDir::Execute(std::string_view exe, std::string_view args) const
+int TmpDir::Execute(const boost::filesystem::path& exec, std::string_view args) const
 {
     if(miopen::IsEnabled(ENV(MIOPEN_DEBUG_SAVE_TEMP_DIR)))
     {
-        MIOPEN_LOG_I2(this->path.string());
+        MIOPEN_LOG_I2(path.string());
     }
-    auto status = Process(exe)(args, this->path);
+    auto status = Process{exec}(args, path);
     if(miopen::IsEnabled(ENV(MIOPEN_DEBUG_EXIT_STATUS_TEMP_DIR)))
     {
         MIOPEN_LOG_I2(status);
     }
+    return status;
 }
+
+#define MIOPEN_TMP_DIR_MAX_RETRIES 5
 
 TmpDir::~TmpDir()
 {
     if(!miopen::IsEnabled(ENV(MIOPEN_DEBUG_SAVE_TEMP_DIR)))
     {
-        if(!this->path.empty())
-            boost::filesystem::remove_all(this->path);
+        int count = 0;
+        while(count < MIOPEN_TMP_DIR_MAX_RETRIES)
+        {
+            try
+            {
+                boost::filesystem::remove_all(path);
+                break;
+            }
+            catch(const boost::filesystem::filesystem_error& err)
+            {
+                MIOPEN_LOG_W(err.what());
+                std::this_thread::sleep_for(std::chrono::milliseconds{250});
+            }
+            ++count;
+        }
     }
 }
 
