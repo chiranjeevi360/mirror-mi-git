@@ -35,7 +35,6 @@
 #include <miopen/mlir_build.hpp>
 #include <miopen/stringutils.hpp>
 #include <miopen/target_properties.hpp>
-#include <miopen/temp_file.hpp>
 #include <miopen/write_file.hpp>
 #include <miopen/env.hpp>
 #include <miopen/comgr.hpp>
@@ -179,9 +178,10 @@ hipModulePtr CreateModuleInMem(const T& blob)
         MIOPEN_THROW_HIP_STATUS(status, "Failed loading module");
     return m;
 #else
-    TempFile f("interim-hsaco");
-    WriteFile(blob, f.Path());
-    return CreateModule(f.Path());
+    TmpDir tmp{"interim-hsaco"};
+    auto f = tmp / "file";
+    WriteFile(blob, f);
+    return CreateModule(f);
 #endif
 }
 

@@ -26,10 +26,11 @@
 
 #include <miopen/binary_cache.hpp>
 #include <miopen/kern_db.hpp>
-#include <miopen/temp_file.hpp>
+#include <miopen/tmp_dir.hpp>
 
 #include "test.hpp"
 #include "random.hpp"
+
 
 #include <gtest/gtest.h>
 
@@ -100,8 +101,9 @@ TEST(TestCache, check_kern_db)
     EXPECT_FALSE(empty_db.StoreRecordUnsafe(cfg0)); // storing in an empty database should fail
 
     {
-        miopen::TempFile temp_file("tmp-kerndb");
-        miopen::KernDb clean_db(std::string(temp_file), false);
+        miopen::TmpDir tmp;
+        auto temp_file = (tmp / "kern.db").string();
+        miopen::KernDb clean_db(temp_file, false);
 
         EXPECT_TRUE(clean_db.StoreRecordUnsafe(cfg0));
         auto readout = clean_db.FindRecordUnsafe(cfg0);
@@ -112,9 +114,10 @@ TEST(TestCache, check_kern_db)
     }
 
     {
-        miopen::TempFile temp_file("tmp-kerndb");
+        miopen::TmpDir tmp;
+        auto temp_file = (tmp / "kern.db").string();
         miopen::KernDb err_db(
-            std::string(temp_file),
+            temp_file,
             false,
             [](std::string str, bool* success) {
                 std::ignore = str;
