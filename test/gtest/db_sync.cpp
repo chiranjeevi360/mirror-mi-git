@@ -708,7 +708,11 @@ void CheckFDBEntry(size_t thread_index,
                     {
                         bool found                  = false;
                         std::string compile_options = kern.comp_options;
-                        std::filesystem::path program_file = kern.kernel_file.string() + ".o";
+#ifdef _WIN32
+                        std::filesystem::path program_file{kern.kernel_file.string() + ".obj"};
+#else
+                        std::filesystem::path program_file{kern.kernel_file.string() + ".o"};
+#endif
                         if(kern.kernel_file.extension() != ".mlir")
                         {
                             auto& handle = ctx.GetStream();

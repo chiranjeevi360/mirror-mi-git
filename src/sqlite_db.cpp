@@ -151,8 +151,8 @@ class SQLite::impl
         int rc           = 0;
         if(is_system)
         {
-            if(std::filesystem::file_size(filepath) <
-               512) // size of a very small database, Empty MIOpen DBs are 20 kb
+            // size of a very small database, Empty MIOpen DBs are 20 kb
+            if(std::filesystem::file_size(filepath) < 512)
             {
                 rc = -1;
                 return rc;

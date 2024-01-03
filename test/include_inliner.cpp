@@ -26,6 +26,7 @@
 
 #include <filesystem>
 #include <string>
+#include <filesystem>
 #include <fstream>
 
 #include <miopen/errors.hpp>

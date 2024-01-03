@@ -37,8 +37,7 @@
 #include <miopen/sqlite_db.hpp>
 #include <miopen/find_db.hpp>
 
-#include <boost/filesystem/path.hpp>
-
+#
 namespace miopen {
 
 struct EmbedSQLite : test_driver

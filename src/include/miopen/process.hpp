@@ -49,7 +49,7 @@ private:
 struct ProcessAsync
 {
     ProcessAsync(const std::filesystem::path& cmd,
-                 std::string_view args              = "",
+                 std::string_view args            = "",
                  const std::filesystem::path& cwd = "");
     ~ProcessAsync() noexcept;
 

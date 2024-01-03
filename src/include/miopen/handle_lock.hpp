@@ -29,8 +29,9 @@
 
 #include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <fstream>
+#include <filesystem>
 #include <mutex>
 #include <miopen/config.h>
 #include <miopen/errors.hpp>
@@ -53,14 +54,14 @@ MIOPEN_DECLARE_HANDLE_MUTEX(gpu_handle_mutex)
 #define MIOPEN_HANDLE_LOCK
 #endif
 
-inline boost::filesystem::path get_handle_lock_path(const char* name)
+inline std::filesystem::path get_handle_lock_path(const char* name)
 {
-    auto p = boost::filesystem::current_path() / name;
-    if(!boost::filesystem::exists(p))
+    auto p = std::filesystem::current_path() / name;
+    if(!std::filesystem::exists(p))
     {
-        auto tmp = boost::filesystem::current_path() / boost::filesystem::unique_path();
-        boost::filesystem::ofstream{tmp}; // NOLINT
-        boost::filesystem::rename(tmp, p);
+        auto tmp = std::filesystem::current_path() / boost::filesystem::unique_path().string();
+        std::ofstream{tmp};
+        std::filesystem::rename(tmp, p);
     }
     return p;
 }
