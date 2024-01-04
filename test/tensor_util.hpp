@@ -30,6 +30,7 @@
 #include <iostream>
 #include <miopen/miopen.h>
 #include <miopen/tensor.hpp>
+#include <filesystem>
 #include <utility>
 #include <cstdlib>
 #include <filesystem>
