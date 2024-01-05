@@ -31,6 +31,7 @@
 #include <boost/optional.hpp>
 
 #include <chrono>
+#include <filesystem>
 #include <map>
 #include <string>
 #include <sstream>
@@ -53,15 +54,15 @@ public:
     {
     }
 
-    RamDb(std::string path, bool is_system = false);
+    RamDb(const std::filesystem::path& path, bool is_system = false);
 
     RamDb(const RamDb&) = delete;
     RamDb(RamDb&&)      = delete;
     RamDb& operator=(const RamDb&) = delete;
     RamDb& operator=(RamDb&&) = delete;
 
-    static std::string GetTimeFilePath(const std::string& path);
-    static RamDb& GetCached(const std::string& path, bool is_system);
+    static std::filesystem::path GetTimeFilePath(const std::filesystem::path& path);
+    static RamDb& GetCached(const std::filesystem::path& path, bool is_system);
 
     static RamDb& GetCached(const std::string& path,
                             bool is_system,

@@ -4,11 +4,9 @@
 
 namespace miopen {
 
-std::string LoadFile(const boost::filesystem::path& p) { return LoadFile(p.string()); }
-
-std::string LoadFile(const std::string& s)
+std::string LoadFile(const std::filesystem::path& path)
 {
-    const std::ifstream t(s);
+    const std::ifstream t(path);
     std::stringstream buffer;
     buffer << t.rdbuf();
     return buffer.str();

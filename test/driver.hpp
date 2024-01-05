@@ -37,13 +37,13 @@
 
 #include <functional>
 #include <deque>
+#include <filesystem>
 #if !defined(_WIN32) && (HIP_PACKAGE_VERSION_FLAT >= 5006000000ULL)
 #include <half/half.hpp>
 #else
 #include <half.hpp>
 #endif
 #include <type_traits>
-#include <boost/filesystem.hpp>
 #include <miopen/functional.hpp>
 #include <miopen/expanduser.hpp>
 #include <miopen/md5.hpp>
@@ -739,7 +739,7 @@ struct test_driver
         if(disabled_cache)
             return true;
         auto p = miopen::ExpandUser(cache_path) / ".disabled";
-        return boost::filesystem::exists(p);
+        return std::filesystem::exists(p);
     }
 
     template <class V, class... Ts>
@@ -750,10 +750,10 @@ struct test_driver
             return cpu_async(v, xs...);
         auto key = miopen::get_type_name<V>() + "-" + miopen::md5(get_command_args());
         auto p   = miopen::ExpandUser(cache_path) / std::to_string(cache_version);
-        if(!boost::filesystem::exists(p))
-            boost::filesystem::create_directories(p);
+        if(!std::filesystem::exists(p))
+            std::filesystem::create_directories(p);
         auto f = p / key;
-        if(boost::filesystem::exists(f) and not retry)
+        if(std::filesystem::exists(f) and not retry)
         {
             miss = false;
             return detach_async([=] {

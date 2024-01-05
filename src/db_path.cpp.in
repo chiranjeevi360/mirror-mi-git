@@ -30,8 +30,6 @@
 #include <miopen/expanduser.hpp>
 #include <miopen/logger.hpp>
 
-#include <boost/filesystem.hpp>
-
 #include <cstdlib>
 #ifdef __linux__
 #include <dlfcn.h>
@@ -43,16 +41,16 @@ MIOPEN_DECLARE_ENV_VAR_STR(MIOPEN_USER_DB_PATH)
 namespace miopen {
 
 #ifdef __linux__
-boost::filesystem::path GetLibPath()
+std::filesystem::path GetLibPath()
 {
-    boost::filesystem::path path = {""};
+    std::filesystem::path path;
     Dl_info info;
 
     if(dladdr(reinterpret_cast<void*>(miopenCreate), &info) != 0)
     {
-        path = boost::filesystem::canonical(boost::filesystem::path{info.dli_fname});
+        path = std::filesystem::canonical(info.dli_fname);
         MIOPEN_LOG_I2(std::string("Lib Path: ") + path.string());
-        if(path.empty())
+        if(!path.has_parent_path())
             return path;
 
         path = path.parent_path();
@@ -61,7 +59,7 @@ boost::filesystem::path GetLibPath()
 }
 #endif
 
-std::string GetSystemDbPath()
+std::filesystem::path GetSystemDbPath()
 {
     auto p = GetStringEnv(ENV(MIOPEN_SYSTEM_DB_PATH));
     if(p.empty())
@@ -74,7 +72,7 @@ std::string GetSystemDbPath()
 #else
     {
         // Get the module path and construct the db path
-        static const auto lib_path = (GetLibPath().parent_path() / "share/miopen/db/").string();
+        static const auto lib_path = GetLibPath().parent_path() / "share" / "miopen" / "db";
         return lib_path;
     }
 #endif
@@ -85,7 +83,7 @@ std::string GetSystemDbPath()
 }
 
 namespace {
-boost::filesystem::path PrepareUserDbPath()
+std::filesystem::path PrepareUserDbPath()
 {
     /// If MIOPEN_USER_DB_PATH is set in the environment, then assume that the user wants
     /// the library to use exactly that path.
@@ -103,7 +101,7 @@ boost::filesystem::path PrepareUserDbPath()
     const auto udb_path = ExpandUser("${MIOPEN_USER_DB_PATH}");
 #if !MIOPEN_BUILD_DEV
     if(IsNetworkedFilesystem(udb_path))
-        return boost::filesystem::temp_directory_path();
+        return std::filesystem::temp_directory_path();
 #endif
     return udb_path;
 }
@@ -113,7 +111,7 @@ std::string GetUserDbSuffix() { return "${MIOPEN_USER_DB_SUFFIX}"; }
 
 std::string GetSystemFindDbSuffix() { return "${MIOPEN_SYSTEM_FIND_DB_SUFFIX}"; }
 
-const boost::filesystem::path& GetUserDbPath()
+const std::filesystem::path& GetUserDbPath()
 {
     static const auto instance = PrepareUserDbPath();
     return instance;

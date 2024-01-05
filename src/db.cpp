@@ -30,8 +30,6 @@
 #include <miopen/logger.hpp>
 
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/none.hpp>
 #include <boost/optional.hpp>
 
@@ -48,9 +46,9 @@
 
 namespace miopen {
 
-PlainTextDb::PlainTextDb(const std::string& filename_, bool is_system)
+PlainTextDb::PlainTextDb(const std::filesystem::path& filename_, bool is_system)
     : filename(filename_),
-      lock_file(LockFile::Get(LockFilePath(filename_).c_str())),
+      lock_file(LockFile::Get(LockFilePath(filename_))),
       warning_if_unreadable(is_system)
 {
     if(is_system)
@@ -61,15 +59,15 @@ PlainTextDb::PlainTextDb(const std::string& filename_, bool is_system)
 
     if(!DisableUserDbFileIO)
     {
-        auto file            = boost::filesystem::path(filename_);
-        const auto directory = file.remove_filename();
+        std::filesystem::path directory =
+            filename.has_parent_path() ? filename.parent_path() : "";
 
-        if(!(boost::filesystem::exists(directory)))
+        if(!std::filesystem::exists(directory))
         {
-            if(!boost::filesystem::create_directories(directory))
+            if(!std::filesystem::create_directories(directory))
                 MIOPEN_LOG_W("Unable to create a directory: " << directory);
             else
-                boost::filesystem::permissions(directory, boost::filesystem::all_all);
+                std::filesystem::permissions(directory, std::filesystem::perms::all);
         }
     }
 }
@@ -253,7 +251,7 @@ bool PlainTextDb::FlushUnsafe(const DbRecord& record, const RecordPositions* pos
             record.WriteContents(file);
         }
 
-        boost::filesystem::permissions(filename, boost::filesystem::all_all);
+        std::filesystem::permissions(filename, std::filesystem::perms::all);
     }
     else
     {
@@ -265,7 +263,7 @@ bool PlainTextDb::FlushUnsafe(const DbRecord& record, const RecordPositions* pos
             return false;
         }
 
-        const auto temp_name = filename + ".temp";
+        const auto temp_name = filename.string() + ".temp";
         std::ofstream to(temp_name, std::ios::binary);
 
         if(!to)
@@ -285,10 +283,10 @@ bool PlainTextDb::FlushUnsafe(const DbRecord& record, const RecordPositions* pos
         from.close();
         to.close();
 
-        std::remove(filename.c_str());
-        std::rename(temp_name.c_str(), filename.c_str());
+        std::filesystem::remove(filename);
+        std::filesystem::rename(temp_name, filename);
         /// \todo What if rename fails? Thou shalt not loose the original file.
-        boost::filesystem::permissions(filename, boost::filesystem::all_all);
+        std::filesystem::permissions(filename, std::filesystem::perms::all);
     }
     return true;
 }

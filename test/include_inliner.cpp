@@ -27,14 +27,13 @@
 #include <string>
 #include <fstream>
 
-#include <boost/filesystem.hpp>
 #include <miopen/errors.hpp>
 #include <miopen/tmp_dir.hpp>
 #include <miopen/process.hpp>
 
 #include "test.hpp"
 
-static int Child(std::string_view cmd, const boost::filesystem::path& path)
+static int Child(std::string_view cmd, const std::filesystem::path& path)
 {
     return miopen::Process{cmd}("-source " + path.string());
 }
@@ -45,7 +44,7 @@ namespace tests {
 class InlinerTest
 {
 public:
-    void Run(const boost::filesystem::path& exe_path) const
+    void Run(const std::filesystem::path& exe_path) const
     {
         const TmpDir test_srcs{"test_include_inliner"};
         const auto addkernels      = (exe_path.parent_path() / "addkernels").string();

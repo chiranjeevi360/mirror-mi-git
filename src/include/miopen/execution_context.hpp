@@ -34,8 +34,8 @@
 #if MIOPEN_EMBED_DB
 #include <miopen_data.hpp>
 #endif
-#include <boost/filesystem.hpp>
 
+#include <filesystem>
 #include <string>
 
 class rocm_meta_version
@@ -112,10 +112,10 @@ struct ExecutionContext
     ExecutionContext& operator=(ExecutionContext&&) = default;
 
 #if MIOPEN_EMBED_DB
-    std::string GetPerfDbPathEmbed() const
+    std::filesystem::path GetPerfDbPathEmbed() const
     {
         static const auto result = [&] {
-            boost::filesystem::path pdb_path(GetSystemDbPath());
+            auto pdb_path(GetSystemDbPath());
             std::ostringstream filename;
             // clang-format off
             filename << GetStream().GetDbBasename();
@@ -136,9 +136,8 @@ struct ExecutionContext
                 MIOPEN_LOG_I2("inexact embedded perf database search");
                 const auto db_id        = GetStream().GetTargetProperties().DbId();
                 const int real_cu_count = GetStream().GetMaxComputeUnits();
-                namespace fs            = boost::filesystem;
                 int closest_cu          = std::numeric_limits<int>::max();
-                fs::path best_path;
+                std::filesystem::path best_path;
                 for(auto const& entry : miopen_data())
                 {
                     // string the .o from the filename
@@ -180,44 +179,41 @@ struct ExecutionContext
         return result;
     }
 #else
-    std::string GetPerfDbPathFile() const
+    std::filesystem::path GetPerfDbPathFile() const
     {
         static const auto result = [&] {
-            const boost::filesystem::path pdb_path(GetSystemDbPath());
-            std::ostringstream filename;
-            // clang-format off
-        filename << GetStream().GetDbBasename();
 #if MIOPEN_ENABLE_SQLITE
-        const std::string ext = ".db";
+            constexpr std::string_view ext = ".db";
 #else
-        const std::string ext = ".cd.pdb.txt";
+            constexpr std::string_view ext = ".cd.pdb.txt";
 #endif
-        filename << ext;
+            const auto pdb_path(GetSystemDbPath());
+            std::string filename{GetStream().GetDbBasename() + ext.data()};
+
             // clang-format on
-            if(boost::filesystem::exists(pdb_path / filename.str()))
+            if(std::filesystem::exists(pdb_path / filename))
             {
                 MIOPEN_LOG_I("Found exact perf database file");
-                return (pdb_path / filename.str()).string();
+                return pdb_path / filename;
             }
             else
             {
                 MIOPEN_LOG_I2("inexact perf database search");
                 const auto db_id        = GetStream().GetTargetProperties().DbId();
                 const int real_cu_count = GetStream().GetMaxComputeUnits();
-                namespace fs            = boost::filesystem;
-                if(fs::exists(pdb_path) && fs::is_directory(pdb_path))
+                if(std::filesystem::is_directory(pdb_path))
                 {
                     MIOPEN_LOG_I2("Iterating over perf db directory " << pdb_path.string());
                     int closest_cu = std::numeric_limits<int>::max();
-                    fs::path best_path;
-                    std::vector<fs::path> contents;
-                    std::copy(fs::directory_iterator(pdb_path),
-                              fs::directory_iterator(),
+                    std::filesystem::path best_path;
+                    std::vector<std::filesystem::path> contents;
+                    std::copy(std::filesystem::directory_iterator(pdb_path),
+                              std::filesystem::directory_iterator(),
                               std::back_inserter(contents));
                     for(auto const& filepath : contents)
                     {
                         const auto fname = filepath.stem().string();
-                        if(fs::is_regular_file(filepath) && filepath.extension() == ext &&
+                        if(std::filesystem::is_regular_file(filepath) && filepath.extension() == ext &&
                            fname.rfind(db_id, 0) == 0) // starts with db_id
                         {
                             MIOPEN_LOG_I2("Checking perf db file: " << fname);
@@ -250,20 +246,20 @@ struct ExecutionContext
                             }
                         }
                     }
-                    return best_path.string();
+                    return best_path;
                 }
                 else
                 {
                     MIOPEN_LOG_I("Database directory does not exist");
                 }
             }
-            return std::string();
+            return std::filesystem::path{};
         }();
         return result;
     }
 #endif
 
-    std::string GetPerfDbPath() const
+    std::filesystem::path GetPerfDbPath() const
     {
 #if MIOPEN_EMBED_DB
         return GetPerfDbPathEmbed();
@@ -272,7 +268,7 @@ struct ExecutionContext
 #endif
     }
 
-    std::string GetUserPerfDbPath() const
+    std::filesystem::path GetUserPerfDbPath() const
     {
         // an empty user-db path indicates user intent to disable
         // the database. Default in when dev builds are on
@@ -286,7 +282,7 @@ struct ExecutionContext
 #else
         filename << "." << GetUserDbSuffix() << ".cd.updb.txt";
 #endif
-        return (udb / filename.str()).string();
+        return udb / filename.str();
     }
 
 private:

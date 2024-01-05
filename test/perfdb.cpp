@@ -34,8 +34,6 @@
 #include <miopen/ramdb.hpp>
 #include <miopen/readonlyramdb.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/optional.hpp>
 
 #include <array>
@@ -65,10 +63,10 @@ private:
     bool cached;
 };
 
-static boost::filesystem::path& exe_path()
+static std::filesystem::path& exe_path()
 {
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-    static boost::filesystem::path exe_path;
+    static std::filesystem::path exe_path;
     return exe_path;
 }
 
@@ -211,7 +209,7 @@ class DbTest
 {
 public:
     DbTest(TmpDir& tmp_) : tmp{tmp_}, temp_file{(tmp / "test.db").string()} { ResetDb(); }
-    virtual ~DbTest() { boost::filesystem::remove(LockFilePath(temp_file)); }
+    virtual ~DbTest() { std::filesystem::remove(LockFilePath(temp_file)); }
 
 protected:
     TmpDir& tmp;

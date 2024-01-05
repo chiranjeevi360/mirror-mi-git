@@ -40,7 +40,7 @@ MIOPEN_DECLARE_ENV_VAR_BOOL(MIOPEN_DEBUG_EXIT_STATUS_TEMP_DIR)
 namespace miopen {
 
 TmpDir::TmpDir(std::string_view prefix)
-    : path{boost::filesystem::temp_directory_path()}
+    : path{std::filesystem::temp_directory_path()}
 {
     std::string p{prefix.empty() ? "" :
         (prefix[0] == '-' ? "" : "-") + std::string{prefix}};
@@ -48,10 +48,10 @@ TmpDir::TmpDir(std::string_view prefix)
     path /= boost::filesystem::unique_path(
         "miopen" + p + "-%%%%-%%%%-%%%%-%%%%").string();
 
-    boost::filesystem::create_directories(path);
+    std::filesystem::create_directories(path);
 }
 
-int TmpDir::Execute(const boost::filesystem::path& exec, std::string_view args) const
+int TmpDir::Execute(const std::filesystem::path& exec, std::string_view args) const
 {
     if(miopen::IsEnabled(ENV(MIOPEN_DEBUG_SAVE_TEMP_DIR)))
     {
@@ -76,10 +76,10 @@ TmpDir::~TmpDir()
         {
             try
             {
-                boost::filesystem::remove_all(path);
+                std::filesystem::remove_all(path);
                 break;
             }
-            catch(const boost::filesystem::filesystem_error& err)
+            catch(const std::filesystem::filesystem_error& err)
             {
                 MIOPEN_LOG_W(err.what());
                 std::this_thread::sleep_for(std::chrono::milliseconds{250});

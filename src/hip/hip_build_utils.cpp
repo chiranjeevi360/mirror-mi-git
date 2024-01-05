@@ -42,12 +42,12 @@ MIOPEN_DECLARE_ENV_VAR_BOOL(MIOPEN_DEBUG_HIP_DUMP)
 
 namespace miopen {
 
-static boost::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
-                                            const std::string& filename,
-                                            std::string src,
-                                            std::string params,
-                                            const TargetProperties& target,
-                                            const bool testing_mode)
+static std::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
+                                          const std::filesystem::path& filename,
+                                          std::string src,
+                                          std::string params,
+                                          const TargetProperties& target,
+                                          const bool testing_mode)
 {
 #ifdef __linux__
     // Write out the include files
@@ -56,7 +56,7 @@ static boost::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
     {
         auto inc_list = GetHipKernelIncList();
         auto inc_path = tmp_dir->path;
-        boost::filesystem::create_directories(inc_path);
+        std::filesystem::create_directories(inc_path);
         for(const auto& inc_file : inc_list)
         {
             auto inc_src = GetKernelInc(inc_file);
@@ -69,8 +69,6 @@ static boost::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
 
     // cppcheck-suppress unreadVariable
     const LcOptionTargetStrings lots(target);
-
-    auto env = std::string("");
 
     if(params.find("-std=") == std::string::npos)
         params += " --std=c++17";
@@ -121,16 +119,18 @@ static boost::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
         std::string(" -DHIP_PACKAGE_VERSION_FLAT=") + std::to_string(HIP_PACKAGE_VERSION_FLAT);
 
     params += " ";
-    auto bin_file = tmp_dir->path / (filename + ".o");
+    auto bin_file = tmp_dir->path / (filename.string() + ".o");
 
     // compile
     {
-        const std::string redirector = testing_mode ? " 1>/dev/null 2>&1" : "";
-        const std::string cmd        = env + std::string(" ") + MIOPEN_HIP_COMPILER;
-        const std::string args       = params + filename + " -o " + bin_file.string() + redirector;
-        tmp_dir->Execute(cmd, args);
-        if(!boost::filesystem::exists(bin_file))
-            MIOPEN_THROW("Failed cmd: '" + cmd + "', args: '" + args + '\'');
+        auto args = params + filename.string() + " -o " + bin_file.string();
+#ifndef _WIN32
+        // Windows uses WIN32 API to execute a subprocess, and no command shell is spawned.
+        args += (testing_mode ? " 1>/dev/null 2>&1" : "");
+#endif
+        tmp_dir->Execute(MIOPEN_HIP_COMPILER, args);
+        if(!std::filesystem::exists(bin_file))
+            MIOPEN_THROW("Failed cmd: '" MIOPEN_HIP_COMPILER "', args: '" + args + '\'');
     }
 
 #if defined(MIOPEN_OFFLOADBUNDLER_BIN) && !MIOPEN_BACKEND_HIP
@@ -151,11 +151,11 @@ static boost::filesystem::path HipBuildImpl(boost::optional<TmpDir>& tmp_dir,
                          + " --inputs=" + bin_file.string() + " --outputs=" + bin_file.string() +
                          ".hsaco --unbundle");
 
-    auto hsaco = std::find_if(boost::filesystem::directory_iterator{tmp_dir->path},
+    auto hsaco = std::find_if(std::filesystem::directory_iterator{tmp_dir->path},
                               {},
                               [](auto entry) { return (entry.path().extension() == ".hsaco"); });
 
-    if(hsaco == boost::filesystem::directory_iterator{})
+    if(hsaco == std::filesystem::directory_iterator{})
     {
         MIOPEN_LOG_E("failed to find *.hsaco in " << hsaco->path().string());
     }
@@ -207,11 +207,11 @@ static bool DetectIfBufferAtomicFaddReturnsFloat(const TargetProperties& target)
 }
 #endif
 
-boost::filesystem::path HipBuild(boost::optional<TmpDir>& tmp_dir,
-                                 const std::string& filename,
-                                 std::string src,
-                                 std::string params,
-                                 const TargetProperties& target)
+std::filesystem::path HipBuild(boost::optional<TmpDir>& tmp_dir,
+                               const std::filesystem::path& filename,
+                               std::string src,
+                               std::string params,
+                               const TargetProperties& target)
 {
 #ifndef ROCM_FEATURE_LLVM_AMDGCN_BUFFER_ATOMIC_FADD_F32_RETURNS_FLOAT
     if(miopen::solver::support_amd_buffer_atomic_fadd(target.Name()))
@@ -224,9 +224,9 @@ boost::filesystem::path HipBuild(boost::optional<TmpDir>& tmp_dir,
     return HipBuildImpl(tmp_dir, filename, src, params, target, false);
 }
 
-void bin_file_to_str(const boost::filesystem::path& file, std::string& buf)
+void bin_file_to_str(const std::filesystem::path& file, std::string& buf)
 {
-    std::ifstream bin_file_ptr(file.string().c_str(), std::ios::binary);
+    std::ifstream bin_file_ptr(file, std::ios::binary);
     std::ostringstream bin_file_strm;
     bin_file_strm << bin_file_ptr.rdbuf();
     buf = bin_file_strm.str();

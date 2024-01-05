@@ -36,16 +36,18 @@
 #include <boost/interprocess/sync/file_lock.hpp>
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <map>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <string_view>
 
 namespace miopen {
 
-std::string LockFilePath(const boost::filesystem::path& filename_);
+std::filesystem::path LockFilePath(const std::filesystem::path& filename_);
 // LockFile class is a wrapper around boost::interprocess::file_lock providing MT-safety.
 // One process should never have more than one instance of this class with same path at the same
 // time. It may lead to undefined behaviour on Windows.
@@ -58,7 +60,7 @@ private:
     };
 
 public:
-    LockFile(const char* path_, PassKey);
+    LockFile(const std::filesystem::path&, PassKey);
     LockFile(const LockFile&) = delete;
     LockFile operator=(const LockFile&) = delete;
 
@@ -122,7 +124,7 @@ public:
         access_mutex.unlock_shared();
     }
 
-    static LockFile& Get(const char* path);
+    static LockFile& Get(const std::filesystem::path& path);
 
     template <class TDuration>
     bool try_lock_for(TDuration duration)
@@ -165,14 +167,14 @@ public:
     }
 
 private:
-    const char* path; // For logging purposes
+    std::filesystem::path path; // For logging purposes
     std::shared_timed_mutex access_mutex;
     boost::interprocess::file_lock flock;
 
-    static std::map<std::string, LockFile>& LockFiles()
+    static std::map<std::filesystem::path, LockFile>& LockFiles()
     {
         // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-        static std::map<std::string, LockFile> lock_files;
+        static std::map<std::filesystem::path, LockFile> lock_files;
         return lock_files;
     }
 

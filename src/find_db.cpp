@@ -32,7 +32,6 @@
 #if MIOPEN_EMBED_DB
 #include <miopen_data.hpp>
 #endif
-#include <boost/filesystem.hpp>
 #include <string>
 #include <vector>
 
@@ -44,10 +43,10 @@ namespace debug {
 MIOPEN_EXPORT bool testing_find_db_enabled = true;
 
 /// \todo Remove when #1723 is resolved.
-boost::optional<std::string>& testing_find_db_path_override()
+boost::optional<std::filesystem::path>& testing_find_db_path_override()
 {
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-    static boost::optional<std::string> data = boost::none;
+    static boost::optional<std::filesystem::path> data = boost::none;
     return data;
 }
 
@@ -59,9 +58,8 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathEmbed(Handle& handle,
                                                        const std::string& path_suffix)
 {
     static const auto embed_path = [&] {
-        namespace fs          = boost::filesystem;
         const std::string ext = ".fdb.txt";
-        const auto root_path  = fs::path(GetSystemDbPath());
+        const auto root_path  = std::filesystem::path(GetSystemDbPath());
         const auto base_name  = handle.GetDbBasename();
         const auto suffix     = GetSystemFindDbSuffix() + path_suffix;
         const auto filename   = base_name + "." + suffix + ext;
@@ -74,7 +72,7 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathEmbed(Handle& handle,
         else
         {
             MIOPEN_LOG_I2("inexact find database search");
-            std::vector<fs::path> all_files;
+            std::vector<std::filesystem::path> all_files;
             for(const auto& kinder : miopen_data())
             {
                 const auto& fname    = kinder.first.substr(0, kinder.first.size() - 2);
@@ -86,7 +84,7 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathEmbed(Handle& handle,
             const auto db_id        = handle.GetTargetProperties().DbId();
             const int real_cu_count = handle.GetMaxComputeUnits();
             int closest_cu          = std::numeric_limits<int>::max();
-            fs::path best_path;
+            std::filesystem::path best_path;
             for(const auto& entry : all_files)
             {
                 const auto fname = entry.stem().string();
@@ -123,44 +121,42 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathEmbed(Handle& handle,
 #else
 
 template <class TDb>
-std::string FindDbRecord_t<TDb>::GetInstalledPathFile(Handle& handle,
+std::filesystem::path FindDbRecord_t<TDb>::GetInstalledPathFile(Handle& handle,
                                                       const std::string& path_suffix)
 {
     static const auto installed_path = [&] {
-        namespace fs          = boost::filesystem;
         const std::string ext = ".fdb.txt";
-        const auto root_path  = fs::path(GetSystemDbPath());
+        const auto root_path  = GetSystemDbPath();
         const auto base_name  = handle.GetDbBasename();
         const auto suffix =
             GetSystemFindDbSuffix() + (path_suffix.empty() ? "" : ('.' + path_suffix));
         const auto file_path = root_path / (base_name + "." + suffix + ext);
-        if(boost::filesystem::exists(file_path))
+        if(std::filesystem::exists(file_path))
         {
             MIOPEN_LOG_I2("Found exact find database file: " + file_path.string());
-            return file_path.string();
+            return file_path;
         }
         else
         {
             MIOPEN_LOG_I2("inexact find database search");
-            if(fs::exists(root_path) && fs::is_directory(root_path))
+            if(std::filesystem::is_directory(root_path))
             {
                 MIOPEN_LOG_I2("Iterating over find db directory " << root_path.string());
-                std::vector<fs::path> all_files;
-                std::vector<fs::path> contents;
-                std::copy(fs::directory_iterator(root_path),
-                          fs::directory_iterator(),
+                std::vector<std::filesystem::path> all_files;
+                std::vector<std::filesystem::path> contents;
+                std::copy(std::filesystem::directory_iterator(root_path),
+                          std::filesystem::directory_iterator(),
                           std::back_inserter(contents));
                 for(auto const& filepath : contents)
                 {
-                    const auto& fname = filepath.string();
-                    if(fs::is_regular_file(filepath) && EndsWith(fname, path_suffix + ".fdb.txt"))
+                    if(std::filesystem::is_regular_file(filepath) && miopen::EndsWith(filepath.string(), path_suffix + ".fdb.txt"))
                         all_files.push_back(filepath);
                 }
 
                 const auto db_id        = handle.GetTargetProperties().DbId();
                 const int real_cu_count = handle.GetMaxComputeUnits();
                 int closest_cu          = std::numeric_limits<int>::max();
-                fs::path best_path;
+                std::filesystem::path best_path;
                 for(const auto& entry : all_files)
                 {
                     const auto fname = entry.stem().string();
@@ -168,10 +164,10 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathFile(Handle& handle,
                     // Check for alternate back end same ASIC
                     if(fname.rfind(base_name, 0) == 0)
                     {
-                        return entry.string();
+                        return entry;
                     }
                     if(db_id.empty() || !miopen::StartsWith(db_id, "gfx") || real_cu_count == 0)
-                        return std::string();
+                        return std::filesystem::path{};
                     // Check for alternate ASIC any back end
                     if(fname.rfind(db_id, 0) == 0)
                     {
@@ -188,12 +184,12 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathFile(Handle& handle,
                         }
                     }
                 }
-                return best_path.string();
+                return best_path;
             }
             else
             {
                 MIOPEN_LOG_I("Database directory does not exist");
-                return std::string();
+                return std::filesystem::path{};
             }
         }
     }();
@@ -201,7 +197,7 @@ std::string FindDbRecord_t<TDb>::GetInstalledPathFile(Handle& handle,
 }
 #endif
 template <class TDb>
-std::string FindDbRecord_t<TDb>::GetInstalledPath(Handle& handle, const std::string& path_suffix)
+std::filesystem::path FindDbRecord_t<TDb>::GetInstalledPath(Handle& handle, const std::string& path_suffix)
 {
 #if !MIOPEN_DISABLE_SYSDB
 #if MIOPEN_EMBED_DB
@@ -217,17 +213,11 @@ std::string FindDbRecord_t<TDb>::GetInstalledPath(Handle& handle, const std::str
 }
 
 template <class TDb>
-std::string FindDbRecord_t<TDb>::GetUserPath(Handle& handle, const std::string& path_suffix)
+std::filesystem::path FindDbRecord_t<TDb>::GetUserPath(Handle& handle, const std::string& path_suffix)
 {
 #if !MIOPEN_DISABLE_USERDB
-    std::ostringstream ss;
-    ss << GetUserDbPath().string() << '/';
-    ss << handle.GetDbBasename();
-    ss << '.' << GetUserDbSuffix();
-    if(!path_suffix.empty())
-        ss << '.' << path_suffix;
-    ss << ".ufdb.txt";
-    return ss.str();
+    return GetUserDbPath() / (handle.GetDbBasename() + '.' + GetUserDbSuffix() +
+            (path_suffix.empty() ? "" : '.' + path_suffix) + ".ufdb.txt");
 #else
     std::ignore = handle;
     std::ignore = path_suffix;

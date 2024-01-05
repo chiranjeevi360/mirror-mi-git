@@ -28,9 +28,8 @@
 #include <miopen/logger.hpp>
 #include <miopen/stringutils.hpp>
 
-#include <boost/filesystem.hpp>
-
 #include <string>
+#include <filesystem>
 #ifdef _WIN32
 #include <optional>
 #include <boost/algorithm/string/replace.hpp>
@@ -136,7 +135,7 @@ bool IsNetworked(unsigned long ft)
 
 #undef CASE_RET_STRING
 
-bool IsNetworkedFilesystem(const boost::filesystem::path& path_)
+bool IsNetworkedFilesystem(const std::filesystem::path& path_)
 {
     // Non-DEV builds put user databases in ~/.config/miopen by default; the binary cache is placed
     // in ~/.cache/miopen. If these directories do not exist, this is not a problem, because the
@@ -155,7 +154,7 @@ bool IsNetworkedFilesystem(const boost::filesystem::path& path_)
     auto path = path_;
     for(int i = 0; i < 32; ++i)
     {
-        if(boost::filesystem::exists(path))
+        if(std::filesystem::exists(path))
             break;
         MIOPEN_LOG_NQI2("Path does not exist: '" << path.string() << '\'');
         path = path.parent_path();
@@ -188,14 +187,14 @@ std::string GetHomeDir()
     // need to figure out what is the correct thing to do here
     // in tensoflow unit tests run via bazel, $HOME is not set, so this can happen
     // setting home_dir to the /tmp for now
-    return {boost::filesystem::temp_directory_path().string()};
+    return std::filesystem::temp_directory_path().string();
 }
 } // namespace
 
-boost::filesystem::path ExpandUser(const std::string& path)
+std::filesystem::path ExpandUser(const std::filesystem::path& path)
 {
-    static const std::string home_dir = GetHomeDir();
-    return {ReplaceString(path, "~", home_dir)};
+    static const auto home_dir = GetHomeDir();
+    return {ReplaceString(path.string(), "~", home_dir)};
 }
 
 #else
@@ -216,7 +215,7 @@ std::optional<std::string> GetEnvironmentVariable(const std::string_view name)
 }
 
 std::optional<std::pair<std::string::size_type, std::string>>
-ReplaceVariable(const std::string& path, std::string_view name, std::size_t offset = 0)
+ReplaceVariable(std::string_view path, std::string_view name, std::size_t offset = 0)
 {
     std::vector<std::string> variables{
         "$" + std::string{name}, "$env:" + std::string{name}, "%" + std::string{name} + "%"};
@@ -225,13 +224,13 @@ ReplaceVariable(const std::string& path, std::string_view name, std::size_t offs
         auto pos{path.find(variable, offset)};
         if(pos != std::string::npos)
         {
-            auto result{path};
+            std::string result{path};
             auto value{GetEnvironmentVariable(name)};
             if(!value)
             {
                 // TODO: log warning message that the name used does not
                 //       correspond to an environment variable.
-                value = boost::filesystem::temp_directory_path().string();
+                value = std::filesystem::temp_directory_path().string();
             }
             result.replace(pos, variable.length(), *value);
             return {{pos, result}};
@@ -241,15 +240,15 @@ ReplaceVariable(const std::string& path, std::string_view name, std::size_t offs
 }
 } // namespace
 
-boost::filesystem::path ExpandUser(const std::string& path)
+std::filesystem::path ExpandUser(const std::filesystem::path& path)
 {
-    auto result{ReplaceVariable(path, "USERPROFILE")};
+    auto result{ReplaceVariable(path.string(), "USERPROFILE")};
     if(!result)
     {
-        result = ReplaceVariable(path, "HOME");
+        result = ReplaceVariable(path.string(), "HOME");
         if(!result)
         {
-            result = ReplaceVariable(path, "HOMEDRIVE");
+            result = ReplaceVariable(path.string(), "HOMEDRIVE");
             if(result)
             {
                 result = ReplaceVariable(std::get<1>(*result), "HOMEPATH", std::get<0>(*result));
@@ -261,7 +260,7 @@ boost::filesystem::path ExpandUser(const std::string& path)
     return {!result ? path : std::get<1>(*result)};
 }
 
-bool IsNetworkedFilesystem(const boost::filesystem::path&) { return false; }
+bool IsNetworkedFilesystem(const std::filesystem::path&) { return false; }
 
 #endif
 

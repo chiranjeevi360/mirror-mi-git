@@ -30,9 +30,6 @@
 #include <miopen/lock_file.hpp>
 #include <miopen/logger.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem.hpp>
-
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -43,7 +40,7 @@
 
 namespace miopen {
 
-std::string RamDb::GetTimeFilePath(const std::string& path) { return path + ".time"; }
+std::filesystem::path RamDb::GetTimeFilePath(const std::filesystem::path& path) { return path.string() + ".time"; }
 
 static ramdb_clock::time_point GetDbModificationTime(const std::string& path)
 {
@@ -59,7 +56,7 @@ static ramdb_clock::time_point GetDbModificationTime(const std::string& path)
     return ramdb_clock::time_point{ramdb_clock::duration{time}};
 }
 
-static void UpdateDbModificationTime(const std::string& path)
+static void UpdateDbModificationTime(const std::filesystem::path& path)
 {
     MIOPEN_LOG_I2("Updating db modification time for " << path);
 
@@ -69,7 +66,7 @@ static void UpdateDbModificationTime(const std::string& path)
 
     if(!file)
     {
-        MIOPEN_LOG_E("Cannot update database modification time: " + time_file_path);
+        MIOPEN_LOG_E("Cannot update database modification time: " + time_file_path.string());
         return;
     }
 
@@ -87,16 +84,16 @@ static std::chrono::seconds GetLockTimeout() { return std::chrono::seconds{60}; 
 
 using exclusive_lock = std::unique_lock<LockFile>;
 
-RamDb::RamDb(std::string path, bool is_system) : PlainTextDb(path, is_system) {}
+RamDb::RamDb(const std::filesystem::path& path, bool is_system) : PlainTextDb(path, is_system) {}
 
-RamDb& RamDb::GetCached(const std::string& path, bool is_system)
+RamDb& RamDb::GetCached(const std::filesystem::path& path, bool is_system)
 {
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
     static std::mutex mutex;
     const std::lock_guard<std::mutex> lock{mutex};
 
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-    static auto instances = std::map<std::string, RamDb*>{};
+    static auto instances = std::map<std::filesystem::path, RamDb*>{};
     const auto it         = instances.find(path);
 
     if(it != instances.end())
@@ -295,7 +292,7 @@ bool RamDb::ValidateUnsafe()
 {
     if(DisableUserDbFileIO)
         return true;
-    if(!boost::filesystem::exists(GetFileName()))
+    if(!std::filesystem::exists(GetFileName()))
         return cache.empty();
     const auto file_mod_time     = GetDbModificationTime(GetFileName());
     const auto validation_result = file_mod_time < file_read_time;

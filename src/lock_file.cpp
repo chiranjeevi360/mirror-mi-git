@@ -29,11 +29,9 @@
 #include <miopen/logger.hpp>
 #include <miopen/md5.hpp>
 
-namespace fs = boost::filesystem;
-
 namespace miopen {
 
-inline void LogFsError(const fs::filesystem_error& ex, const std::string& from)
+inline void LogFsError(const std::filesystem::filesystem_error& ex, const std::string& from)
 {
     // clang-format off
     MIOPEN_LOG_E_FROM(from, "File system operation error in LockFile. "
@@ -42,42 +40,42 @@ inline void LogFsError(const fs::filesystem_error& ex, const std::string& from)
     // clang-format on
 }
 
-std::string LockFilePath(const fs::path& filename_)
+std::filesystem::path LockFilePath(const std::filesystem::path& filename_)
 {
     try
     {
-        const auto directory = fs::temp_directory_path() / "miopen-lockfiles";
+        const auto directory = std::filesystem::temp_directory_path() / "miopen-lockfiles";
 
-        if(!fs::exists(directory))
+        if(!std::filesystem::exists(directory))
         {
-            fs::create_directories(directory);
-            fs::permissions(directory, fs::all_all);
+            std::filesystem::create_directories(directory);
+            std::filesystem::permissions(directory, std::filesystem::perms::all);
         }
         const auto hash = md5(filename_.parent_path().string());
         const auto file = directory / (hash + "_" + filename_.filename().string() + ".lock");
 
-        return file.string();
+        return file;
     }
-    catch(const fs::filesystem_error& ex)
+    catch(const std::filesystem::filesystem_error& ex)
     {
         LogFsError(ex, MIOPEN_GET_FN_NAME());
         throw;
     }
 }
 
-LockFile::LockFile(const char* path_, PassKey) : path(path_)
+LockFile::LockFile(const std::filesystem::path& path_, PassKey) : path(path_)
 {
     try
     {
-        if(!fs::exists(path))
+        if(!std::filesystem::exists(path))
         {
             if(!std::ofstream{path})
-                MIOPEN_THROW(std::string("Error creating file <") + path + "> for locking.");
-            fs::permissions(path, fs::all_all);
+                MIOPEN_THROW(std::string("Error creating file <") + path.string() + "> for locking.");
+            std::filesystem::permissions(path, std::filesystem::perms::all);
         }
-        flock = path;
+        flock = path.string().c_str();
     }
-    catch(const fs::filesystem_error& ex)
+    catch(const std::filesystem::filesystem_error& ex)
     {
         LogFsError(ex, MIOPEN_GET_FN_NAME());
         throw;
@@ -89,7 +87,7 @@ LockFile::LockFile(const char* path_, PassKey) : path(path_)
     }
 }
 
-LockFile& LockFile::Get(const char* path)
+LockFile& LockFile::Get(const std::filesystem::path& path)
 {
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
     static std::mutex mutex;

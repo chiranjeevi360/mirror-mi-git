@@ -101,7 +101,7 @@ void testDump(const std::string& test_file_name)
     compare(host_tensor, tensor_from_file);
 
     // clean up
-    boost::filesystem::remove(test_file_name);
+    std::filesystem::remove(test_file_name);
 }
 
 template <class T>
@@ -137,7 +137,7 @@ void testDumpWithNan(const std::string& test_file_name)
             << "] = " << host_tensor.data[nan_index];
     }
     // clean up
-    boost::filesystem::remove(test_file_name);
+    std::filesystem::remove(test_file_name);
 }
 
 TEST(DUMP_TENSOR_TEST, testDump_float) { testDump<float>(test_file_name_prefix + "float.bin"); }

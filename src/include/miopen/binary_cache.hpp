@@ -29,7 +29,7 @@
 
 #include <miopen/config.h>
 #include <miopen/target_properties.hpp>
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 #include <string>
 
 #define FIN_OLD_BINARY_CACHE_COMPAT 1
@@ -38,17 +38,17 @@ namespace miopen {
 
 bool IsCacheDisabled();
 
-boost::filesystem::path
+std::filesystem::path
 GetCacheFile(const std::string& device, const std::string& name, const std::string& args);
 
-boost::filesystem::path GetCachePath(bool is_system);
+std::filesystem::path GetCachePath(bool is_system);
 
 #if !MIOPEN_ENABLE_SQLITE_KERN_CACHE
-boost::filesystem::path LoadBinary(const TargetProperties& target,
+std::filesystem::path LoadBinary(const TargetProperties& target,
                                    std::size_t num_cu,
                                    const std::string& name,
                                    const std::string& args);
-void SaveBinary(const boost::filesystem::path& binary_path,
+void SaveBinary(const std::filesystem::path& binary_path,
                 const TargetProperties& target,
                 const std::string& name,
                 const std::string& args);

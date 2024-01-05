@@ -32,9 +32,6 @@
 #include <miopen_data.hpp>
 #endif
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <fstream>
 #include <mutex>
 #include <sstream>
@@ -51,14 +48,14 @@ bool& rordb_embed_fs_override()
 }
 } // namespace debug
 
-ReadonlyRamDb& ReadonlyRamDb::GetCached(const std::string& path, bool warn_if_unreadable)
+ReadonlyRamDb& ReadonlyRamDb::GetCached(const std::filesystem::path& path, bool warn_if_unreadable)
 {
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
     static std::mutex mutex;
     const std::lock_guard<std::mutex> lock{mutex};
 
     // NOLINTNEXTLINE (cppcoreguidelines-avoid-non-const-global-variables)
-    static auto instances = std::map<std::string, ReadonlyRamDb*>{};
+    static auto instances = std::map<std::filesystem::path, ReadonlyRamDb*>{};
     const auto it         = instances.find(path);
 
     if(it != instances.end())

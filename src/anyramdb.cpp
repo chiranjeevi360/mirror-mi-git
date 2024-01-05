@@ -29,9 +29,6 @@
 #include <miopen/errors.hpp>
 #include <miopen/logger.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem.hpp>
-
 #include <chrono>
 #include <ctime>
 #include <fstream>
@@ -53,12 +50,12 @@ static std::chrono::seconds GetLockTimeout() { return std::chrono::seconds{60}; 
 
 using exclusive_lock = std::unique_lock<LockFile>;
 
-AnyRamDb& AnyRamDb::GetCached(const std::string& path)
+AnyRamDb& AnyRamDb::GetCached(const std::filesystem::path& path)
 {
     static std::mutex mutex;
     const std::lock_guard<std::mutex> lock{mutex};
 
-    static auto instances = std::map<std::string, AnyRamDb*>{};
+    static auto instances = std::map<std::filesystem::path, AnyRamDb*>{};
     const auto it         = instances.find(path);
 
     if(it != instances.end())

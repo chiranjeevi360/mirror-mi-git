@@ -30,6 +30,7 @@
 
 #include <boost/optional.hpp>
 
+#include <filesystem>
 #include <unordered_map>
 #include <string>
 #include <sstream>
@@ -43,9 +44,9 @@ extern bool& rordb_embed_fs_override();
 class ReadonlyRamDb
 {
 public:
-    ReadonlyRamDb(std::string path) : db_path(path) {}
+    ReadonlyRamDb(const std::filesystem::path& path) : db_path(path) {}
 
-    static ReadonlyRamDb& GetCached(const std::string& path, bool warn_if_unreadable);
+    static ReadonlyRamDb& GetCached(const std::filesystem::path& path, bool warn_if_unreadable);
 
     boost::optional<DbRecord> FindRecord(const std::string& problem) const
     {
@@ -96,7 +97,7 @@ public:
     const std::unordered_map<std::string, CacheItem>& GetCacheMap() const { return cache; }
 
 private:
-    std::string db_path;
+    std::filesystem::path db_path;
     std::unordered_map<std::string, CacheItem> cache;
 
     ReadonlyRamDb(const ReadonlyRamDb&) = default;

@@ -45,7 +45,6 @@
 #endif
 #include <hip/hip_runtime_api.h>
 #if MIOPEN_USE_HIPRTC
-#include <miopen/manage_ptr.hpp>
 #include <hip/hiprtc.h>
 #endif
 
